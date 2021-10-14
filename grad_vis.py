@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import umap
 from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from mpl_toolkits.mplot3d import Axes3D
 
 from data import dro_dataset
@@ -63,8 +65,13 @@ mds_embed = MDS(n_components=3)
 mds_embedded = mds_embed.fit_transform(grads)
 print("MDS embedding of gradients with shape", mds_embedded.shape)
 
+pca = PCA(n_components=50)
+pcaembed = pca.fit_transform(grads)
+tsne = TSNE(n_components=2)
+tsneembed = tsne.fit_transform(pcaembed)
+print("TSNE embedding with shape", tsneembed.shape, "of PCA embedding of shape", pcaembed.shape)
+
 y_data = get_data()
-print(y_data)
 print("Y label data with shape", y_data.shape)
 
 plt.scatter(embedding[:,0], embedding[:,1], c=y_data, cmap='Spectral', s=5)
@@ -77,3 +84,10 @@ fig2 = plt.figure()
 ax = Axes3D(fig2)
 ax.scatter(mds_embedded[:,0], mds_embedded[:,1], mds_embedded[:,2], c=y_data, cmap='Spectral')
 plt.savefig("figures/mds_plot.pdf")
+
+plt.clf()
+plt.scatter(tsneembed[:,0], tsneembed[:,1], c=y_data, cmap='Spectral', s=5)
+plt.gca().set_aspect('equal', 'datalim')
+plt.colorbar(boundaries=np.arange(5)-0.5).set_ticks(np.arange(4))
+plt.title('TSNE embedding of PCA embedding (50) of test set gradients')
+plt.savefig("figures/tsne_plot.pdf")
