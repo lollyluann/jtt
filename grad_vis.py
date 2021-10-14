@@ -35,7 +35,7 @@ def get_data():
 
     y_data = []
     for batch_idx, batch in enumerate(test_loader):
-        y_data.append(batch[1])
+        y_data.append(batch[2])
     y_data = np.stack(y_data[:-1], axis=0)
     y_data = y_data.flatten()
     return y_data
@@ -62,4 +62,5 @@ print("Y label data with shape", y_data.shape)
 
 plt.scatter(embedding[:,0], embedding[:,1], c=y_data, cmap='Spectral', s=5)
 plt.gca().set_aspect('equal', 'datalim')
-plt.savefig("umap_plot.pdf")
+plt.title('UMAP projection of test set gradients')
+plt.savefig("figures/umap_plot.pdf")
