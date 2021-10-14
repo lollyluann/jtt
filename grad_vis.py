@@ -4,6 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import umap
+from sklearn.manifold import MDS
+from mpl_toolkits.mplot3d import Axes3D
 
 from data import dro_dataset
 from data.confounder_utils import prepare_confounder_data
@@ -57,11 +59,21 @@ else:
     np.save("umap_embedding.npy", embedding)
 print("UMAP embedding of gradients with shape", embedding.shape)
 
+mds_embed = MDS(n_components=3)
+mds_embedded = mds_embed.fit_transform(grads)
+print("MDS embedding of gradients with shape", mds_embedded.shape)
+
 y_data = get_data()
 print(y_data)
 print("Y label data with shape", y_data.shape)
 
 plt.scatter(embedding[:,0], embedding[:,1], c=y_data, cmap='Spectral', s=5)
 plt.gca().set_aspect('equal', 'datalim')
+plt.colorbar(boundaries=np.arange(5)-0.5).set_ticks(np.arange(4))
 plt.title('UMAP projection of test set gradients')
 plt.savefig("figures/umap_plot.pdf")
+
+fig2 = plt.figure()
+ax = Axes3D(fig2)
+ax.scatter(mds_embedded[:,0], mds_embedded[:,1], mds_embedded[:,2], c=y_data, cmap='Spectral')
+plt.savefig("figures/mds_plot.pdf")
