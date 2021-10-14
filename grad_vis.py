@@ -58,6 +58,7 @@ else:
 print("UMAP embedding of gradients with shape", embedding.shape)
 
 y_data = get_data()
+print(y_data)
 print("Y label data with shape", y_data.shape)
 
 plt.scatter(embedding[:,0], embedding[:,1], c=y_data, cmap='Spectral', s=5)
