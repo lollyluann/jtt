@@ -1,107 +1,195 @@
+import sys
+import os
+import torch
 import numpy as np
-import matplotlib.pyplot as plt
+import csv
 
-def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0):
-    
-    mu_y0_a0 = np.array([1.,1.])*mu_mult
-    mu_y0_a1 = np.array([5., 7.])*mu_mult
-    mu_y1_a0 = np.array([1.,3.])*mu_mult
-    mu_y1_a1 = np.array([3., 7.])*mu_mult
-    
-    # mu_y0_a0 = np.array([1.,1.])*mu_mult
-    # mu_y0_a1 = np.array([5., 7.])*mu_mult
-    # mu_y1_a0 = np.array([-1,1.])*mu_mult
-    # mu_y1_a1 = np.array([3., 7.])*mu_mult
-    
-    
-    mu = [[mu_y0_a0, mu_y0_a1], [mu_y1_a0, mu_y1_a1]]
-    
-    cov_y0_a0 = np.array([skew,1.])*cov_mult
-    cov_y0_a1 = np.array([1.,skew])*cov_mult
-    cov_y1_a0 = np.array([skew,1.])*cov_mult
-    cov_y1_a1 = np.array([1.,skew])*cov_mult
-    
-    # cov_y0_a0 = np.array([1.,skew])*cov_mult
-    # cov_y0_a1 = np.array([1.,skew])*cov_mult
-    # cov_y1_a0 = np.array([1.,skew])*cov_mult
-    # cov_y1_a1 = np.array([1.,skew])*cov_mult
-    
-    cov = [[cov_y0_a0, cov_y0_a1], [cov_y1_a0, cov_y1_a1]]
-    
-    data_x = []
-    data_y = []
-    data_a = []
-    
-    for y in [0,1]:
-        for a in [0,1]:
-            n_ya = int(n*prop_mtx[y][a])
-            data_y += n_ya*[y]
-            data_a += n_ya*[a]
-            data_x.append(np.random.normal(loc=mu[y][a], scale=np.sqrt(cov[y][a]), size=(n_ya,2)))
+import torch
+import torch.nn as nn
+import torchvision
+from models import model_attributes
+
+
+class Logger(object):
+    def __init__(self, fpath=None, mode="w"):
+        self.console = sys.stdout
+        self.file = None
+        if fpath is not None:
+            self.file = open(fpath, mode)
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        self.close()
+
+    def write(self, msg):
+        self.console.write(msg)
+        if self.file is not None:
+            self.file.write(msg)
+
+    def flush(self):
+        self.console.flush()
+        if self.file is not None:
+            self.file.flush()
+            os.fsync(self.file.fileno())
+
+    def close(self):
+        self.console.close()
+        if self.file is not None:
+            self.file.close()
+
+
+class CSVBatchLogger:
+    def __init__(self, csv_path, n_groups, mode="w"):
+        columns = ["epoch", "batch"]
+        for idx in range(n_groups):
+            columns.append(f"avg_loss_group:{idx}")
+            columns.append(f"exp_avg_loss_group:{idx}")
+            columns.append(f"avg_acc_group:{idx}")
+            columns.append(f"processed_data_count_group:{idx}")
+            columns.append(f"update_data_count_group:{idx}")
+            columns.append(f"update_batch_count_group:{idx}")
+        columns.append("avg_actual_loss")
+        columns.append("avg_per_sample_loss")
+        columns.append("avg_acc")
+        columns.append("model_norm_sq")
+        columns.append("reg_loss")
+
+        self.path = csv_path
+        self.file = open(csv_path, mode)
+        self.columns = columns
+        self.writer = csv.DictWriter(self.file, fieldnames=columns)
+        if mode == "w":
+            self.writer.writeheader()
+
+    def log(self, epoch, batch, stats_dict):
+        stats_dict["epoch"] = epoch
+        stats_dict["batch"] = batch
+        self.writer.writerow(stats_dict)
+
+    def flush(self):
+        self.file.flush()
+
+    def close(self):
+        self.file.close()
+
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+def accuracy(output, target, topk=(1, )):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    temp = target.view(1, -1).expand_as(pred)
+    temp = temp.cuda()
+    correct = pred.eq(temp)
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+def set_seed(seed):
+    """Sets seed"""
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+
+
+def log_args(args, logger):
+    for argname, argval in vars(args).items():
+        logger.write(f'{argname.replace("_"," ").capitalize()}: {argval}\n')
+    logger.write("\n")
+
+
+def hinge_loss(yhat, y):
+    # The torch loss takes in three arguments so we need to split yhat
+    # It also expects classes in {+1.0, -1.0} whereas by default we give them in {0, 1}
+    # Furthermore, if y = 1 it expects the first input to be higher instead of the second,
+    # so we need to swap yhat[:, 0] and yhat[:, 1]...
+    torch_loss = torch.nn.MarginRankingLoss(margin=1.0, reduction="none")
+    y = (y.float() * 2.0) - 1.0
+    return torch_loss(yhat[:, 1], yhat[:, 0], y)
+
+
+def get_model(model, pretrained, resume, n_classes, dataset, log_dir):
+    if resume:
+        model = torch.load(os.path.join(log_dir, "last_model.pth"))
+        d = train_data.input_size()[0]
+    elif model_attributes[model]["feature_type"] in (
+            "precomputed",
+            "raw_flattened",
+    ):
+        assert pretrained
+        # Load precomputed features
+        d = train_data.input_size()[0]
+        model = nn.Linear(d, n_classes)
+        model.has_aux_logits = False
+    elif model == "resnet50":
+        model = torchvision.models.resnet50(pretrained=pretrained)
+        d = model.fc.in_features
+        model.fc = nn.Linear(d, n_classes)
+    elif model == "resnet34":
+        model = torchvision.models.resnet34(pretrained=pretrained)
+        d = model.fc.in_features
+        model.fc = nn.Linear(d, n_classes)
+    elif model == "wideresnet50":
+        model = torchvision.models.wide_resnet50_2(pretrained=pretrained)
+        d = model.fc.in_features
+        model.fc = nn.Linear(d, n_classes)
+    elif model.startswith('bert'):
+        if dataset == "MultiNLI":
             
-            if a == 1 and rotate > 0:
-                mean = data_x[-1].mean(axis=0)
-                data_x[-1] = (data_x[-1]-mean) @ rotation(rotate) + mean
-    
-    order = np.random.permutation(len(data_y))
-    
-    data_x = np.vstack(data_x)[order]
-    data_x = np.sqrt(data_x - data_x.min(axis=0))
-    # if rotate > 0:
-    #     mean = data_x.mean(axis=0)
-    #     data_x = (data_x-mean) @ rotation(rotate) + mean
-        
-    data_y = np.array(data_y)[order]
-    data_a = np.array(data_a)[order]
-    
-    return data_x, data_a, data_y
+            assert dataset == "MultiNLI"
 
-def rotation(angle):
-    theta = np.radians(angle)
-    c, s = np.cos(theta), np.sin(theta)
-    R = np.array(((c, -s), (s, c)))
-    return R
+            from pytorch_transformers import BertConfig, BertForSequenceClassification
 
-def plot_sample(data_x, data_a, data_y, ax=None, title=None, show=True):
-    markers = ['o' , 'x']
-    colors = ['r','b']
-    
-    if ax is None:
-        fig = plt.figure(figsize=(10,10))
-        ax = fig.add_subplot(111)
-    for y in [0,1]:
-        for a in [0,1]:
-            x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
-            ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=75, label='y=%d, a=%d' % (y,a))
-    plt.legend(loc='upper left', fontsize=15)
-    plt.grid()
-    if title is not None:
-        plt.title(title, fontsize=15)
-        
-    if show:
-        plt.show()
-    
-    return ax
+            config_class = BertConfig
+            model_class = BertForSequenceClassification
 
-def plot_decision(data_x, data_a, data_y, decision_f, title=None):
-    
-    # Decision colormap
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot(111)
-    # ax = plot_sample(data_x, data_a, data_y, ax=None, title=title, show=False)
-    h = .02
-    # cm = plt.cm.RdBu
-    cm = plt.cm.Spectral
-    x_min, x_max = data_x[:, 0].min() - .5, data_x[:, 0].max() + .5
-    y_min, y_max = data_x[:, 1].min() - .5, data_x[:, 1].max() + .5
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                         np.arange(y_min, y_max, h))
-    Z = decision_f(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
-    ax.contourf(xx, yy, Z, cmap=cm, alpha=.8)
-    plot_sample(data_x, data_a, data_y, ax=ax, title=title, show=False)
-    plt.xlim([x_min, x_max])
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    plt.tight_layout()
-    plt.show()
+            config = config_class.from_pretrained("bert-base-uncased",
+                                                num_labels=3,
+                                                finetuning_task="mnli")
+            model = model_class.from_pretrained("bert-base-uncased",
+                                                from_tf=False,
+                                                config=config)
+        elif dataset == "jigsaw":
+            from transformers import BertForSequenceClassification
+            model = BertForSequenceClassification.from_pretrained(
+                model,
+                num_labels=n_classes)
+            print(f'n_classes = {n_classes}')
+        else: 
+            raise NotImplementedError
+    else:
+        raise ValueError(f"{model} Model not recognized.")
+
+    return model
