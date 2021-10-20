@@ -80,7 +80,7 @@ def plot_sample(data_x, data_a, data_y, ax=None, title=None, show=True):
         
     if show:
         plt.show()
-    plt.savefig("plot_sample.pdf")
+    plt.savefig("plot_sample_" + title + ".pdf")
     
     return ax
 
@@ -106,4 +106,4 @@ def plot_decision(data_x, data_a, data_y, decision_f, title=None):
     plt.yticks(fontsize=14)
     plt.tight_layout()
     plt.show()
-    plt.savefig("plot_decision.pdf")
+    plt.savefig("plot_decision_" + title + ".pdf")
