@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 
 def group_metrics(y_true, y_pred, y_protected, label_protected=0, label_good=0):
     idx_prot = np.where(y_protected == label_protected)[0]
