@@ -110,7 +110,7 @@ def plot_decision(data_x, data_a, data_y, decision_f, title=None):
 
 
 def plot_grad(data_x, data_a, data_y, grad, title=None):
-    fig = plt.figure(figsize=(6,6))
+    fig = plt.figure(figsize=(10,10))
     ax = fig.add_subplot(111)
     
     markers = ['o' , 'x']
@@ -120,7 +120,7 @@ def plot_grad(data_x, data_a, data_y, grad, title=None):
         for a in [0,1]:
             x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
             ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=75, label='y=%d, a=%d' % (y,a))
-    #ax.quiver(data_x[:,0], data_x[:,1], grad[:,0], grad[:,1], units='xy', scale=0.5, color='gray')
+    ax.quiver(data_x[:,0], data_x[:,1], grad[:,0], grad[:,1], units='xy', scale=0.5, color='gray')
 
     plt.legend(loc='upper left', fontsize=15)
     plt.grid()
