@@ -115,12 +115,15 @@ def plot_grad(data_x, data_a, data_y, grad, title=None):
     
     markers = ['o' , 'x']
     colors = ['r','b']
+
+    # rescale gradients
+    grad = grad * 0.2/np.amax(grad)
     
     for y in [0,1]:
         for a in [0,1]:
             x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
             ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=35, label='y=%d, a=%d' % (y,a))
-    ax.quiver(data_x[:,0], data_x[:,1], grad[:,0], grad[:,1], units='xy', scale=1.5, color='gray')
+    ax.quiver(data_x[:,0], data_x[:,1], grad[:,0], grad[:,1], units='xy', scale=1, color='gray')
 
     plt.legend(loc='upper left', fontsize=15)
     plt.grid()
