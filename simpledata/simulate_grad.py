@@ -1,6 +1,6 @@
 import torch, math
 import numpy as np
-from utils import simul_x_y_a, plot_sample, plot_decision, plot_grad
+from utils import simul_x_y_a, add_outliers, plot_sample, plot_decision, plot_grad
 from sklearn.linear_model import LogisticRegression
 from metrics import group_metrics
 
@@ -10,12 +10,12 @@ skew = 5.
 
 train_prop_mtx = [[0.4, 0.1],[0.4, 0.1]]
 train_x, train_a, train_y = simul_x_y_a(train_prop_mtx, n=1000, mu_mult=mu_mult, 
-                                        cov_mult=cov_mult, skew=skew)
+                                        cov_mult=cov_mult, skew=skew, outliers=True)
 plot_sample(train_x, train_a, train_y, title='Train')
 
 test_prop_mtx = [[0.25, 0.25],[0.25, 0.25]]
 test_x, test_a, test_y = simul_x_y_a(test_prop_mtx, n=1000, mu_mult=mu_mult, 
-                                     cov_mult=cov_mult, skew=skew)
+                                     cov_mult=cov_mult, skew=skew, outliers=True)
 plot_sample(test_x, test_a, test_y, title='Test')
 
 train_x, train_y, text_x, test_y = map(torch.tensor, (train_x, train_y, test_x, test_y))
@@ -89,5 +89,7 @@ plot_decision(full_detach(test_x), test_a, full_detach(test_y), lambda x: full_d
 #plot_decision(test_x, test_a, test_y, lambda x: base_lr_ideal.predict_proba(x)[:,1], title='Log Reg IDEAL')
 
 print(weight_traingrad.shape, input_traingrad.shape, bias_traingrad)
+print(weight_traingrad.shape)
+print(weight_testgrad.shape)
 plot_grad(full_detach(train_x), train_a, full_detach(train_y), input_traingrad, title="TrainGrad")
 plot_grad(full_detach(test_x), test_a, full_detach(test_y), input_testgrad, title="TestGrad")

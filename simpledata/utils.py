@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0):
+def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0, outliers=False):
     
     mu_y0_a0 = np.array([1.,1.])*mu_mult
     mu_y0_a1 = np.array([5., 7.])*mu_mult
@@ -53,8 +53,27 @@ def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0):
         
     data_y = np.array(data_y)[order]
     data_a = np.array(data_a)[order]
+
+    if outliers:
+        data_x, data_a, data_y = add_outliers(data_x, data_a, data_y)
     
     return data_x, data_a, data_y
+
+def add_outliers(x, a, y, flip_label=0.025, random_pts=0.025):
+    mask = np.zeros(y.size, dtype=int)
+    mask[:int(flip_label*y.size)] = 1
+    np.random.shuffle(mask)
+    y = np.absolute(np.subtract(mask, y))
+
+    samples, dim = x.shape
+    random_x = np.random.rand(int(random_pts*samples), dim)*6
+    random_labels = np.around(np.random.rand(int(random_pts*samples)))
+    random_a = np.around(np.random.rand(int(random_pts*samples)))
+    
+    x = np.concatenate((x, random_x), axis=0)
+    a = np.append(a, random_a)
+    y = np.append(y, random_labels)
+    return x.astype('double'), a.astype('int'), y.astype('int')
 
 def rotation(angle):
     theta = np.radians(angle)
