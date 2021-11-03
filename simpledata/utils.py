@@ -95,7 +95,7 @@ def plot_sample(data_x, data_a, data_y, ax=None, title=None, show=True):
     for y in [0,1]:
         for a in [0,1,2]:
             x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
-            ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=75, label='y=%d, a=%d' % (y,a))
+            ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=45, label='y=%d, a=%d' % (y,a))
     plt.legend(loc='upper left', fontsize=15)
     plt.grid()
     if title is not None:
@@ -170,6 +170,9 @@ def plot_3d(data_x, data_y, data_a, weight_grad, bias_grad, title=None):
             ax.scatter(w_ya[:,0], w_ya[:,1], b_ya, c=colors[y], marker=markers[a], label='y=%d, a=%d' % (y,a))
     
     plt.legend(loc='upper left', fontsize=15)
+    ax.set_xlabel('Gradient wrt weight 0')
+    ax.set_ylabel('Gradient wrt weight 1')
+    ax.set_zlabel('Gradient wrt bias')
     if title is not None:
         plt.title(title, fontsize=15)
     plt.savefig("weight_bias_grads_" + title + ".pdf")
