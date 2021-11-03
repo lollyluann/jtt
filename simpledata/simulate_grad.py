@@ -42,7 +42,7 @@ def model(xb):
 
 loss_func = torch.nn.BCELoss()
 lr = 0.05
-epochs = 5 #30
+epochs = 30
 
 weight_traingrad, input_traingrad, bias_traingrad = [], [], []
 weight_testgrad, input_testgrad, bias_testgrad = [], [], []
