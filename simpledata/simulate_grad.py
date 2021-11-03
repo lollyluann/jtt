@@ -1,7 +1,7 @@
 import torch, math
 from tqdm import tqdm
 import numpy as np
-from utils import simul_x_y_a, add_outliers, plot_sample, plot_decision, plot_grad
+from utils import simul_x_y_a, add_outliers, plot_sample, plot_decision, plot_grad, plot_3d
 from sklearn.linear_model import LogisticRegression
 from metrics import group_metrics
 
@@ -112,5 +112,6 @@ print(weight_traingrad.shape, input_traingrad.shape, bias_traingrad)
 print(weight_traingrad.sum(), bias_traingrad.sum())
 plot_grad(full_detach(train_x), train_a, full_detach(train_y), input_traingrad, title="TrainGradInput")
 plot_grad(full_detach(train_x), train_a, full_detach(train_y), weight_traingrad, title="TrainGradWeight")
+plot_3d(full_detach(train_x), full_detach(train_y), train_a, weight_traingrad, bias_traingrad, title="TrainGradWeightsBias")
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), bias_traingrad, title="TrainGradBias")
 #plot_grad(full_detach(test_x), test_a, full_detach(test_y), input_testgrad, title="TestGrad")

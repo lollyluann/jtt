@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0, outliers=False):
     
@@ -152,3 +153,20 @@ def plot_grad(data_x, data_a, data_y, grad, title=None):
     plt.savefig("plot_grad_" + title + ".pdf")
     
     return ax
+
+def plot_3d(data_x, data_y, data_a, weight_grad, bias_grad, title=None):
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    markers = ['o' , 'x']
+    colors = ['r','b']
+
+    for y in [0,1]:
+        for a in [0,1]:
+            b_ya = bias_grad[np.logical_and(data_a==a, data_y==y)]
+            w_ya = weight_grad[np.logical_and(data_a==a, data_y==y)]
+            ax.scatter(w_ya[:,0], w_ya[:,1], b_ya, c=colors[y], marker=markers[a], label='y=%d, a=%d' % (y,a))
+    
+    plt.legend(loc='upper left', fontsize=15)
+    if title is not None:
+        plt.title(title, fontsize=15)
+    plt.savefig("weight_bias_grads_" + title + ".pdf")
