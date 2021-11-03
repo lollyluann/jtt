@@ -75,7 +75,7 @@ def add_outliers(x, a, y, flip_label=0.025, random_pts=0.025):
 
     x = np.concatenate((x, random_x), axis=0)
     a = np.append(a, random_a)
-    a[ones_p] = 2
+    a[ones_p==1] = 2
     y = np.append(y, random_labels)
     return x.astype('double'), a.astype('int'), y.astype('int')
 
