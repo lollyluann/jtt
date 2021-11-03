@@ -9,12 +9,12 @@ skew = 5.
 
 train_prop_mtx = [[0.4, 0.1],[0.4, 0.1]]
 train_x, train_a, train_y = simul_x_y_a(train_prop_mtx, n=1000, mu_mult=mu_mult, 
-                                        cov_mult=cov_mult, skew=skew)
+                                        cov_mult=cov_mult, skew=skew, outliers=True)
 plot_sample(train_x, train_a, train_y, title='Train')
 
 test_prop_mtx = [[0.25, 0.25],[0.25, 0.25]]
 test_x, test_a, test_y = simul_x_y_a(test_prop_mtx, n=1000, mu_mult=mu_mult, 
-                                     cov_mult=cov_mult, skew=skew)
+                                     cov_mult=cov_mult, skew=skew, outliers=True)
 plot_sample(test_x, test_a, test_y, title='Test')
 
 test_biased_x, test_biased_a, test_biased_y = simul_x_y_a(train_prop_mtx, n=1000, 
