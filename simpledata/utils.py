@@ -55,9 +55,10 @@ def simul_x_y_a(prop_mtx, n=100, mu_mult=1., cov_mult=0.5, skew=2., rotate=0, ou
     data_y = np.array(data_y)[order]
     data_a = np.array(data_a)[order]
 
+    data_p = np.zeros(data_y.size)
+
     if outliers:
         data_x, data_a, data_y = add_outliers(data_x, data_a, data_y)
-    
     return data_x, data_a, data_y
 
 def add_outliers(x, a, y, flip_label=0.025, random_pts=0.025):
@@ -70,9 +71,11 @@ def add_outliers(x, a, y, flip_label=0.025, random_pts=0.025):
     random_x = np.random.rand(int(random_pts*samples), dim)*6
     random_labels = np.around(np.random.rand(int(random_pts*samples)))
     random_a = np.around(np.random.rand(int(random_pts*samples)))
-    
+    ones_p = np.append(mask, np.ones(int(random_pts*samples))).astype('int')
+
     x = np.concatenate((x, random_x), axis=0)
     a = np.append(a, random_a)
+    a[ones_p] = 2
     y = np.append(y, random_labels)
     return x.astype('double'), a.astype('int'), y.astype('int')
 
@@ -83,14 +86,14 @@ def rotation(angle):
     return R
 
 def plot_sample(data_x, data_a, data_y, ax=None, title=None, show=True):
-    markers = ['o' , 'x']
+    markers = ['o' , 'x', '^']
     colors = ['r','b']
     
     if ax is None:
         fig = plt.figure(figsize=(10,10))
         ax = fig.add_subplot(111)
     for y in [0,1]:
-        for a in [0,1]:
+        for a in [0,1,2]:
             x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
             ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=75, label='y=%d, a=%d' % (y,a))
     plt.legend(loc='upper left', fontsize=15)
@@ -133,14 +136,14 @@ def plot_grad(data_x, data_a, data_y, grad, title=None):
     fig = plt.figure(figsize=(10,10))
     ax = fig.add_subplot(111)
     
-    markers = ['o' , 'x']
+    markers = ['o' , 'x', '^']
     colors = ['r','b']
 
     # rescale gradients
     grad = grad * 0.2/np.amax(grad)
     
     for y in [0,1]:
-        for a in [0,1]:
+        for a in [0,1,2]:
             x_ya = data_x[np.logical_and(data_a==a, data_y==y)]
             ax.scatter(x_ya[:,0],x_ya[:,1], c=colors[y], marker=markers[a], s=35, label='y=%d, a=%d' % (y,a))
     ax.quiver(data_x[:,0], data_x[:,1], grad[:,0], grad[:,1], units='xy', scale=1, color='gray')
@@ -157,11 +160,11 @@ def plot_grad(data_x, data_a, data_y, grad, title=None):
 def plot_3d(data_x, data_y, data_a, weight_grad, bias_grad, title=None):
     fig = plt.figure()
     ax = Axes3D(fig)
-    markers = ['o' , 'x']
+    markers = ['o' , 'x', '^']
     colors = ['r','b']
 
     for y in [0,1]:
-        for a in [0,1]:
+        for a in [0,1,2]:
             b_ya = bias_grad[np.logical_and(data_a==a, data_y==y)]
             w_ya = weight_grad[np.logical_and(data_a==a, data_y==y)]
             ax.scatter(w_ya[:,0], w_ya[:,1], b_ya, c=colors[y], marker=markers[a], label='y=%d, a=%d' % (y,a))
