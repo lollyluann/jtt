@@ -21,5 +21,5 @@ for ep in tqdm(eps_options):
     ax.set_xlabel('Gradient wrt weight 0')
     ax.set_ylabel('Gradient wrt weight 1')
     ax.set_zlabel('Gradient wrt bias')
-    ax.text2D(0.95, 0.05, str(num_clusters) + " clusters + outliers", transform=ax.transAxes)
+    ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers", transform=ax.transAxes)
     plt.savefig("cluster_ep_" + str(ep) + ".pdf")
