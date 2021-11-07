@@ -115,3 +115,16 @@ plot_grad(full_detach(train_x), train_a, full_detach(train_y), weight_traingrad,
 plot_3d(full_detach(train_x), full_detach(train_y), train_a, weight_traingrad, bias_traingrad, title="TrainGradWeightsBias")
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), bias_traingrad, title="TrainGradBias")
 #plot_grad(full_detach(test_x), test_a, full_detach(test_y), input_testgrad, title="TestGrad")
+
+grads = np.append(weight_traingrad, bias_traingrad[np.newaxis].T, axis=1)
+print(weight_traingrad.shape, bias_traingrad.shape, grads.shape)
+save_dir = "weight_bias_grads.npy"
+np.save(save_dir, grads)
+
+
+
+
+
+
+
+
