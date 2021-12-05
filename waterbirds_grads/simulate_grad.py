@@ -3,6 +3,7 @@ from tqdm import tqdm
 import numpy as np
 from utils import simul_x_y_a, add_outliers, plot_sample, plot_decision, plot_grad, plot_3d
 from metrics import group_metrics
+from sklearn.metrics import accuracy_score
 
 device = torch.device("cuda")
 
@@ -49,7 +50,8 @@ def model(xb):
     return sig(xb @ weights + bias)
 
 loss_func = torch.nn.BCELoss()
-lr = 0.05
+optimizer = torch.optim.Adam([weights, bias], lr=0.001)
+#lr = 0.05
 epochs = 100
 
 weight_traingrad, input_traingrad, bias_traingrad = [], [], []
@@ -58,15 +60,18 @@ weight_testgrad, input_testgrad, bias_testgrad = [], [], []
 for epoch in tqdm(range(epochs)):
     pred = model(train_x).squeeze()
     loss = loss_func(pred, train_y.double())
+    optimizer.zero_grad()
     loss.backward()
     input_traingrad = full_detach(train_x.grad)
+    optimizer.step()
    
-    with torch.no_grad():
+    '''with torch.no_grad():
         weights -= weights.grad * lr
         bias -= bias.grad * lr
         weights.grad.zero_()
         bias.grad.zero_()
-    
+    '''
+
     if epoch==epochs-1:
         weight_traingrad, bias_traingrad = [], []
         for i, pt in enumerate(train_x):
@@ -111,6 +116,10 @@ _ = group_metrics(test_y, base_predict_ideal, test_a, label_protected=1, label_g
 '''
 #plot_decision(full_detach(test_x), test_a, full_detach(test_y), lambda x: predict(model, x), title='Log Reg')
 #plot_decision(test_x, test_a, test_y, lambda x: base_lr_ideal.predict_proba(x)[:,1], title='Log Reg IDEAL')
+
+predictions = predict(model, train_x)
+acc = accuracy_score(full_detach(train_y), predictions)
+print("Training accuracy", acc)
 
 weight_traingrad = np.array(weight_traingrad)
 bias_traingrad = np.array(bias_traingrad)
