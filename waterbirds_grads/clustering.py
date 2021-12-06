@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 from collections import Counter
 from scipy.spatial.distance import pdist, squareform
+from sklearn.manifold import MDS
 
 data_dir = "weight_bias_grads.npy"
 grads = np.load(data_dir)
@@ -19,7 +20,8 @@ _ = plt.hist(distance_matrix, bins='auto')
 plt.title("Histogram of pairwise distances")
 plt.savefig("histogram_dists.pdf")
 
-eps_options = [avg_distance*i for i in range(1, 5)]
+eps_options = [avg_distance*i/100 for i in range(10, 90, 10)]
+plotdata = MDS(n_components=3).fit_transform(grads)
 
 for ep in eps_options:
     dbscan = cluster.DBSCAN(eps=ep, min_samples=5)
@@ -27,14 +29,12 @@ for ep in eps_options:
     num_clusters = np.unique(clustered).size-1
     print("eps={} yielded {} clusters".format(ep, num_clusters))
     print(Counter(clustered))
-    '''fig = plt.figure()
+
+    fig = plt.figure()
     ax = Axes3D(fig)
-    scattered = ax.scatter(grads[:,0], grads[:,1], grads[:,2], c=clustered, cmap="Spectral")
-    ax.set_xlabel('Gradient wrt weight 0')
-    ax.set_ylabel('Gradient wrt weight 1')
-    ax.set_zlabel('Gradient wrt bias')
+    scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
     ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers", transform=ax.transAxes)
-    plt.savefig("cluster_ep_" + str(ep) + ".pdf")'''
+    plt.savefig("cluster_ep_" + str(ep) + ".pdf")
 
 agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
 #agg = cluster.AgglomerativeClustering(n_clusters=4)
