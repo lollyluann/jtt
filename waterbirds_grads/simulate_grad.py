@@ -38,7 +38,7 @@ test_biased_x, test_biased_a, test_biased_y = simul_x_y_a(train_prop_mtx, n=1000
 
 train_x = torch.tensor(np.load("../train_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
 train_y = torch.tensor(np.load("../train_data_y_resnet50.npy"), device=device)
-train_g = np.load("../train_data_g_resnet50.npy")
+train_l = np.load("../train_data_l_resnet50.npy")
 
 a = train_x.shape[1]
 weights = torch.randn(a, 1, device=device, dtype=torch.double)/math.sqrt(a)
@@ -105,7 +105,7 @@ def evaluate(model, data, labels, groups):
     predictions = predict(model, data)
     acc = accuracy_score(labels, predictions)
 
-    for ig in [0, 1, 2, 3]:
+    for ig in [0, 1, 2, 3, 4]:
         indices = [i for i in range(len(labels)) if (groups[i]==ig)]
         print("Group", ig, ":", len(indices), "samples")
         print(accuracy_score(labels[indices], predictions[indices]))
@@ -129,7 +129,7 @@ _ = group_metrics(test_y, base_predict_ideal, test_a, label_protected=1, label_g
 #plot_decision(test_x, test_a, test_y, lambda x: base_lr_ideal.predict_proba(x)[:,1], title='Log Reg IDEAL')
 
 print("Training data accuracies")
-evaluate(model, train_x, full_detach(train_y), train_g)
+evaluate(model, train_x, full_detach(train_y), train_l)
 
 weight_traingrad = np.array(weight_traingrad)
 bias_traingrad = np.array(bias_traingrad)
@@ -146,10 +146,10 @@ np.save(save_dir, grads)
 
 test_x = torch.tensor(np.load("../test_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
 test_y = np.load("../test_data_y_resnet50.npy")
-test_g = np.load("../test_data_g_resnet50.npy")
+test_l = np.load("../test_data_l_resnet50.npy")
 
 print("Test data accuracies")
-evaluate(model, test_x, test_y, test_g)
+evaluate(model, test_x, test_y, test_l)
 
 
 

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -21,7 +22,12 @@ plt.title("Histogram of pairwise distances")
 plt.savefig("histogram_dists.pdf")
 
 eps_options = [avg_distance*i/100 for i in range(10, 90, 10)]
-plotdata = MDS(n_components=3).fit_transform(grads)
+
+if not os.path.exists("mds_data.npy"):
+    plotdata = MDS(n_components=3).fit_transform(grads)
+    np.save("mds_data.npy", plotdata)
+else:
+    plotdata = np.load("mds_data.npy")
 
 for ep in eps_options:
     dbscan = cluster.DBSCAN(eps=ep, min_samples=5)
@@ -71,5 +77,6 @@ fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
 ax.text2D(0.05, 0.95, "4 groups + outliers", transform=ax.transAxes)
-ax.legend()
+legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Groups")
+ax.add_artist(legend)
 plt.savefig("ground_truth_memberships.pdf")
