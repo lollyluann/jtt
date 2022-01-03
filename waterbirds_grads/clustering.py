@@ -44,7 +44,7 @@ print(agg.n_clusters_)
 
 
 # read in true labels
-train_y = np.load("../train_data_y_resnet50.npy")
+'''train_y = np.load("../train_data_y_resnet50.npy")
 train_g = np.load("../train_data_g_resnet50.npy")
 print(train_g)
 # y: 0 is land, 1 is water
@@ -60,7 +60,16 @@ for i in range(len(train_y)):
         if train_g[i]==0:
             label.append(2)
         else: label.append(3)
+'''
+train_l = np.load("../train_data_l_resnet50.npy")
 
 from sklearn.metrics import confusion_matrix
 
-print(confusion_matrix(label, labels))
+print(confusion_matrix(train_l, labels))
+
+fig = plt.figure()
+ax = Axes3D(fig)
+scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
+ax.text2D(0.05, 0.95, "4 groups + outliers", transform=ax.transAxes)
+ax.legend()
+plt.savefig("ground_truth_memberships.pdf")

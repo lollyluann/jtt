@@ -3,7 +3,7 @@ from tqdm import tqdm
 import numpy as np
 from utils import simul_x_y_a, add_outliers, plot_sample, plot_decision, plot_grad, plot_3d
 from metrics import group_metrics
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 device = torch.device("cuda")
 
@@ -38,7 +38,7 @@ test_biased_x, test_biased_a, test_biased_y = simul_x_y_a(train_prop_mtx, n=1000
 
 train_x = torch.tensor(np.load("../train_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
 train_y = torch.tensor(np.load("../train_data_y_resnet50.npy"), device=device)
-
+train_g = np.load("../train_data_g_resnet50.npy")
 
 a = train_x.shape[1]
 weights = torch.randn(a, 1, device=device, dtype=torch.double)/math.sqrt(a)
@@ -101,6 +101,17 @@ def predict(model, data):
         data = torch.tensor(data)
     return full_detach(model(data).round())
 
+def evaluate(model, data, labels, groups):
+    predictions = predict(model, data)
+    acc = accuracy_score(labels, predictions)
+
+    for ig in [0, 1, 2, 3]:
+        indices = [i for i in range(len(labels)) if (groups[i]==ig)]
+        print("Group", ig, ":", len(indices), "samples")
+        print(accuracy_score(labels[indices], predictions[indices]))
+    print("Overall accuracy", acc)
+    print(confusion_matrix(labels, predictions))
+
 ## Base classifier
 #base_predict = predict(model, train_x)
 #print('Baseline')
@@ -117,14 +128,11 @@ _ = group_metrics(test_y, base_predict_ideal, test_a, label_protected=1, label_g
 #plot_decision(full_detach(test_x), test_a, full_detach(test_y), lambda x: predict(model, x), title='Log Reg')
 #plot_decision(test_x, test_a, test_y, lambda x: base_lr_ideal.predict_proba(x)[:,1], title='Log Reg IDEAL')
 
-predictions = predict(model, train_x)
-acc = accuracy_score(full_detach(train_y), predictions)
-print("Training accuracy", acc)
+print("Training data accuracies")
+evaluate(model, train_x, full_detach(train_y), train_g)
 
 weight_traingrad = np.array(weight_traingrad)
 bias_traingrad = np.array(bias_traingrad)
-print(weight_traingrad.shape, input_traingrad.shape, bias_traingrad)
-print(weight_traingrad.sum(), bias_traingrad.sum())
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), input_traingrad, title="TrainGradInput")
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), weight_traingrad, title="TrainGradWeight")
 #plot_3d(full_detach(train_x), full_detach(train_y), train_a, weight_traingrad, bias_traingrad, title="TrainGradWeightsBias")
@@ -136,8 +144,12 @@ print(weight_traingrad.shape, bias_traingrad.shape, grads.shape)
 save_dir = "weight_bias_grads.npy"
 np.save(save_dir, grads)
 
+test_x = torch.tensor(np.load("../test_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
+test_y = np.load("../test_data_y_resnet50.npy")
+test_g = np.load("../test_data_g_resnet50.npy")
 
-
+print("Test data accuracies")
+evaluate(model, test_x, test_y, test_g)
 
 
 
