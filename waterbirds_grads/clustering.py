@@ -11,13 +11,13 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 
-compute_dists = True
+compute_dists = False
 do_dbscan = False
 do_agg = False
 bias_separate = True
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
-overwrite = False
+overwrite = True
 
 data_dir = "weight_bias_grads.npy"
 grads = np.load(data_dir)
@@ -67,7 +67,7 @@ elif dim_red == "PCA":
     print("Dimensionality reduction via PCA")
     if not os.path.exists("pca_data.npy") or overwrite:
         if bias_separate:
-            plotdata = PCA(n_components=2).fit_transform(grads)
+            plotdata = PCA(n_components=2).fit_transform(grads[:,:-1])
             plotdata = np.append(plotdata, np.array([grads[:,-1]]).T, axis=1)
         else:
             plotdata = PCA(n_components=3).fit_transform(grads)
