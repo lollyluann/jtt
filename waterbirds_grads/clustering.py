@@ -16,6 +16,7 @@ do_dbscan = False
 do_agg = False
 bias_separate = True
 dim_red = "PCA"
+dist_metric = "cosine" #"euclidean"
 overwrite = False
 
 data_dir = "weight_bias_grads.npy"
@@ -25,12 +26,12 @@ print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
 if compute_dists:
-    distance_matrix = pdist(grads, metric="euclidean")
+    distance_matrix = pdist(grads, metric=dist_metric)
     avg_distance = distance_matrix.mean()
-    print("Avg pairwise distance:", avg_distance)
+    print("Avg pairwise " + dist_metric + " distance:", avg_distance)
     _ = plt.hist(distance_matrix, bins='auto')
     plt.title("Histogram of pairwise distances")
-    plt.savefig("histogram_dists.pdf")
+    plt.savefig("histogram_dists_"+dist_metric+".pdf")
 
     def square_to_condensed(i, j, n):
         if i==j: return 0
@@ -53,7 +54,7 @@ if compute_dists:
     print(avgs_groups)
     fig = plt.figure()
     ax = sns.heatmap(avgs_groups)
-    plt.savefig("group_distances_heatmap.pdf")
+    plt.savefig(dist_metric+"_group_distances_heatmap.pdf")
 
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")
