@@ -8,46 +8,65 @@ from tqdm import tqdm
 from collections import Counter
 from scipy.spatial.distance import pdist, squareform
 from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
+from sklearn.metrics import confusion_matrix
+
+compute_dists = False
+do_dbscan = False
+do_agg = False
+dim_red = "MDS"
 
 data_dir = "weight_bias_grads.npy"
 grads = np.load(data_dir)
+train_l = np.load("../train_data_l_resnet50.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
-distance_matrix = pdist(grads, metric="euclidean")
-avg_distance = distance_matrix.mean()
-print("Avg pairwise distance:", avg_distance)
-_ = plt.hist(distance_matrix, bins='auto')
-plt.title("Histogram of pairwise distances")
-plt.savefig("histogram_dists.pdf")
+if compute_dists:
+    distance_matrix = pdist(grads, metric="euclidean")
+    avg_distance = distance_matrix.mean()
+    print("Avg pairwise distance:", avg_distance)
+    _ = plt.hist(distance_matrix, bins='auto')
+    plt.title("Histogram of pairwise distances")
+    plt.savefig("histogram_dists.pdf")
 
-eps_options = [avg_distance*i/100 for i in range(10, 90, 10)]
+if dim_red == "MDS":
+    print("Dimensionality reduction via MDS")
+    if not os.path.exists("mds_data.npy"):
+        plotdata = MDS(n_components=3).fit_transform(grads)
+        np.save("mds_data.npy", plotdata)
+    else:
+        plotdata = np.load("mds_data.npy")
+elif dim_red == "PCA":
+    print("Dimensionality reduction via PCA")
+    if not os.path.exists("pca_data.npy"):
+        plotdata = PCA(n_components=3).fit_transform(grads)
+        np.save("pca_data.npy", plotdata)
+    else:
+        plotdata = np.load("pca_data.npy")
 
-if not os.path.exists("mds_data.npy"):
-    plotdata = MDS(n_components=3).fit_transform(grads)
-    np.save("mds_data.npy", plotdata)
-else:
-    plotdata = np.load("mds_data.npy")
+if do_dbscan:
+    eps_options = [avg_distance*i/100 for i in range(10, 90, 10)]
+    for ep in eps_options:
+        dbscan = cluster.DBSCAN(eps=ep, min_samples=5)
+        clustered = dbscan.fit_predict(grads)
+        num_clusters = np.unique(clustered).size-1
+        print("eps={} yielded {} clusters".format(ep, num_clusters))
+        print(Counter(clustered))
 
-for ep in eps_options:
-    dbscan = cluster.DBSCAN(eps=ep, min_samples=5)
-    clustered = dbscan.fit_predict(grads)
-    num_clusters = np.unique(clustered).size-1
-    print("eps={} yielded {} clusters".format(ep, num_clusters))
-    print(Counter(clustered))
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
+        ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers", transform=ax.transAxes)
+        plt.savefig("cluster_ep_" + str(ep) + ".pdf")
 
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
-    ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers", transform=ax.transAxes)
-    plt.savefig("cluster_ep_" + str(ep) + ".pdf")
-
-agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
-#agg = cluster.AgglomerativeClustering(n_clusters=4)
-labels = agg.fit_predict(grads)
-print(Counter(labels))
-print(agg.n_clusters_)
-
+if do_agg:
+    agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
+    #agg = cluster.AgglomerativeClustering(n_clusters=4)
+    labels = agg.fit_predict(grads)
+    print(Counter(labels))
+    print(agg.n_clusters_)
+    print(confusion_matrix(train_l, labels))
 
 # read in true labels
 '''train_y = np.load("../train_data_y_resnet50.npy")
@@ -67,16 +86,11 @@ for i in range(len(train_y)):
             label.append(2)
         else: label.append(3)
 '''
-train_l = np.load("../train_data_l_resnet50.npy")
-
-from sklearn.metrics import confusion_matrix
-
-print(confusion_matrix(train_l, labels))
 
 fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
-ax.text2D(0.05, 0.95, "4 groups + outliers", transform=ax.transAxes)
+ax.text2D(0.05, 0.95, dim_red+": 4 groups + outliers", transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Groups")
 ax.add_artist(legend)
-plt.savefig("ground_truth_memberships.pdf")
+plt.savefig(dim_red+"_ground_truth_memberships.pdf")
