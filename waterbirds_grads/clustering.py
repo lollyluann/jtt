@@ -30,7 +30,7 @@ if compute_dists:
     avg_distance = distance_matrix.mean()
     print("Avg pairwise " + dist_metric + " distance:", avg_distance)
     _ = plt.hist(distance_matrix, bins='auto')
-    plt.title("Histogram of pairwise distances")
+    plt.title("Histogram of pairwise " +dist_metric+" distances")
     plt.savefig("histogram_dists_"+dist_metric+".pdf")
 
     def square_to_condensed(i, j, n):
