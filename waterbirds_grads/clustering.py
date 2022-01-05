@@ -11,12 +11,12 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 
-compute_dists = False
+compute_dists = True
 do_dbscan = False
 do_agg = False
 bias_separate = True
 dim_red = "PCA"
-overwrite = True
+overwrite = False
 
 data_dir = "weight_bias_grads.npy"
 grads = np.load(data_dir)
@@ -31,6 +31,29 @@ if compute_dists:
     _ = plt.hist(distance_matrix, bins='auto')
     plt.title("Histogram of pairwise distances")
     plt.savefig("histogram_dists.pdf")
+
+    def square_to_condensed(i, j, n):
+        if i==j: return 0
+        if i<j:
+            i, j = j, i
+        return n*j - j*(j+1)//2 + i - 1 - j
+
+    # compute average/histogram within and cross group distances
+    sums_groups = np.zeros((5,5))
+    counts_groups = np.zeros((5,5))
+    n = grads.shape[0]
+    for a in tqdm(range(grads.shape[0])):
+        for b in range(a+1, grads.shape[0]):
+            sums_groups[train_l[a], train_l[b]] += distance_matrix[square_to_condensed(a, b, n)]
+            sums_groups[train_l[b], train_l[a]] += distance_matrix[square_to_condensed(a, b, n)]
+            counts_groups[train_l[a], train_l[b]] += 1
+            counts_groups[train_l[b], train_l[a]] += 1
+    avgs_groups = sums_groups/counts_groups
+    print("Avg group distances")
+    print(avgs_groups)
+    fig = plt.figure()
+    ax = sns.heatmap(avgs_groups)
+    plt.savefig("group_distances_heatmap.pdf")
 
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")
