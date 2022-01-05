@@ -14,7 +14,9 @@ from sklearn.metrics import confusion_matrix
 compute_dists = False
 do_dbscan = False
 do_agg = False
-dim_red = "MDS"
+bias_separate = True
+dim_red = "PCA"
+overwrite = True
 
 data_dir = "weight_bias_grads.npy"
 grads = np.load(data_dir)
@@ -39,8 +41,12 @@ if dim_red == "MDS":
         plotdata = np.load("mds_data.npy")
 elif dim_red == "PCA":
     print("Dimensionality reduction via PCA")
-    if not os.path.exists("pca_data.npy"):
-        plotdata = PCA(n_components=3).fit_transform(grads)
+    if not os.path.exists("pca_data.npy") or overwrite:
+        if bias_separate:
+            plotdata = PCA(n_components=2).fit_transform(grads)
+            plotdata = np.append(plotdata, np.array([grads[:,-1]]).T, axis=1)
+        else:
+            plotdata = PCA(n_components=3).fit_transform(grads)
         np.save("pca_data.npy", plotdata)
     else:
         plotdata = np.load("pca_data.npy")
