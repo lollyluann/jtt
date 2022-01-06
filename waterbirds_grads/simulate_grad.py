@@ -49,6 +49,28 @@ def model(xb):
     sig = torch.nn.Sigmoid().to(device)
     return sig(xb @ weights + bias)
 
+def export_grads(x, y, model, optimizer, data_name, loss_func=torch.nn.BCELoss()):
+    weight_traingrad, bias_traingrad = [], []
+    for i, pt in enumerate(x):
+        ptpred = torch.squeeze(model(pt[None, :]), dim=1)
+        loss2 = loss_func(ptpred, y[i:i+1].double())
+        loss2.backward()
+        weight_grad = full_detach(weights.grad)
+        bias_grad = full_detach(bias.grad)
+        weight_traingrad.append(weight_grad.copy())
+        bias_traingrad.append(bias_grad.copy())
+        with torch.no_grad():
+            weights.grad.zero_()
+            bias.grad.zero_()
+    
+    weight_traingrad = np.array(weight_traingrad)
+    bias_traingrad = np.array(bias_traingrad)
+
+    grads = np.append(weight_traingrad, bias_traingrad[np.newaxis].T, axis=1)
+    print(weight_traingrad.shape, bias_traingrad.shape, grads.shape)
+    save_dir = "weight_bias_grads_"+data_name+".npy"
+    np.save(save_dir, grads)
+
 loss_func = torch.nn.BCELoss()
 optimizer = torch.optim.Adam([weights, bias], lr=0.001)
 #lr = 0.05
@@ -73,7 +95,7 @@ for epoch in tqdm(range(epochs)):
     '''
 
     if epoch==epochs-1:
-        weight_traingrad, bias_traingrad = [], []
+        '''weight_traingrad, bias_traingrad = [], []
         for i, pt in enumerate(train_x):
             ptpred = torch.squeeze(model(pt[None, :]), dim=1)
             loss2 = loss_func(ptpred, train_y[i:i+1].double())
@@ -84,7 +106,8 @@ for epoch in tqdm(range(epochs)):
             bias_traingrad.append(bias_grad.copy())
             with torch.no_grad():
                 weights.grad.zero_()
-                bias.grad.zero_()
+                bias.grad.zero_()'''
+        export_grads(train_x, train_y, model, optimizer, "train")
     
     '''
     testloss = loss_func(model(test_x), test_y)
@@ -131,27 +154,31 @@ _ = group_metrics(test_y, base_predict_ideal, test_a, label_protected=1, label_g
 print("Training data accuracies")
 evaluate(model, train_x, full_detach(train_y), train_l)
 
-weight_traingrad = np.array(weight_traingrad)
-bias_traingrad = np.array(bias_traingrad)
+#weight_traingrad = np.array(weight_traingrad)
+#bias_traingrad = np.array(bias_traingrad)
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), input_traingrad, title="TrainGradInput")
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), weight_traingrad, title="TrainGradWeight")
 #plot_3d(full_detach(train_x), full_detach(train_y), train_a, weight_traingrad, bias_traingrad, title="TrainGradWeightsBias")
 #plot_grad(full_detach(train_x), train_a, full_detach(train_y), bias_traingrad, title="TrainGradBias")
 #plot_grad(full_detach(test_x), test_a, full_detach(test_y), input_testgrad, title="TestGrad")
 
-grads = np.append(weight_traingrad, bias_traingrad[np.newaxis].T, axis=1)
-print(weight_traingrad.shape, bias_traingrad.shape, grads.shape)
-save_dir = "weight_bias_grads.npy"
-np.save(save_dir, grads)
+#grads = np.append(weight_traingrad, bias_traingrad[np.newaxis].T, axis=1)
+#print(weight_traingrad.shape, bias_traingrad.shape, grads.shape)
+#save_dir = "weight_bias_grads.npy"
+#np.save(save_dir, grads)
 
 test_x = torch.tensor(np.load("../test_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
-test_y = np.load("../test_data_y_resnet50.npy")
+test_y = torch.tensor(np.load("../test_data_y_resnet50.npy"), device=device)
 test_l = np.load("../test_data_l_resnet50.npy")
 
 print("Test data accuracies")
-evaluate(model, test_x, test_y, test_l)
+evaluate(model, test_x, full_detach(test_y), test_l)
 
+val_x = torch.tensor(np.load("../val_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
+val_y = torch.tensor(np.load("../val_data_y_resnet50.npy"), device=device)
 
+export_grads(val_x, val_y, model, optimizer, "val")
+export_grads(test_x, test_y, model, optimizer, "test")
 
 
 

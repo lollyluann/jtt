@@ -11,17 +11,18 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 
-compute_dists = False
+compute_dists = True
 do_dbscan = False
 do_agg = False
-bias_separate = True
+bias_separate = False
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
+which_data = "val"
 
-data_dir = "weight_bias_grads.npy"
+data_dir = "weight_bias_grads_"+which_data+".npy"
 grads = np.load(data_dir)
-train_l = np.load("../train_data_l_resnet50.npy")
+train_l = np.load("../" + which_data +"_data_l_resnet50.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
@@ -54,26 +55,26 @@ if compute_dists:
     print(avgs_groups)
     fig = plt.figure()
     ax = sns.heatmap(avgs_groups)
-    plt.savefig(dist_metric+"_group_distances_heatmap.pdf")
+    plt.savefig(dist_metric+"_group_distances_heatmap"+which_data+".pdf")
 
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")
-    if not os.path.exists("mds_data.npy"):
+    if not os.path.exists("mds_data_"+which_data+".npy"):
         plotdata = MDS(n_components=3).fit_transform(grads)
-        np.save("mds_data.npy", plotdata)
+        np.save("mds_data_"+which_data+".npy", plotdata)
     else:
-        plotdata = np.load("mds_data.npy")
+        plotdata = np.load("mds_data_"+which_data+".npy")
 elif dim_red == "PCA":
     print("Dimensionality reduction via PCA")
-    if not os.path.exists("pca_data.npy") or overwrite:
+    if not os.path.exists("pca_data_"+which_data+".npy") or overwrite:
         if bias_separate:
             plotdata = PCA(n_components=2).fit_transform(grads[:,:-1])
             plotdata = np.append(plotdata, np.array([grads[:,-1]]).T, axis=1)
         else:
             plotdata = PCA(n_components=3).fit_transform(grads)
-        np.save("pca_data.npy", plotdata)
+        np.save("pca_data_"+which_data+".npy", plotdata)
     else:
-        plotdata = np.load("pca_data.npy")
+        plotdata = np.load("pca_data_"+which_data+".npy")
 
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(10, 90, 10)]
@@ -120,7 +121,7 @@ for i in range(len(train_y)):
 fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
-ax.text2D(0.05, 0.95, dim_red+": 4 groups + outliers", transform=ax.transAxes)
+ax.text2D(0.05, 0.95, dim_red+": 4 groups + outliers, "+which_data, transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Groups")
 ax.add_artist(legend)
-plt.savefig(dim_red+"_ground_truth_memberships.pdf")
+plt.savefig(dim_red+"_ground_truth_memberships_"+which_data+".pdf")
