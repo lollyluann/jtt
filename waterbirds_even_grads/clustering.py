@@ -87,9 +87,9 @@ elif dim_red == "PCA":
 
 num_pcs = 5
 if do_dbscan:
-    eps_options = [avg_distance*i/100 for i in range(10, 160, 20)]
+    eps_options = [avg_distance*i/100 for i in range(100, 600, 100)]
     for ep in eps_options:
-        dbscan = cluster.DBSCAN(eps=ep, min_samples=5)
+        dbscan = cluster.DBSCAN(eps=ep, min_samples=5, metric="cosine")
         clustered = dbscan.fit_predict(plotdata[:,:num_pcs])
         num_clusters = np.unique(clustered).size-1
         print("eps={} yielded {} clusters".format(ep, num_clusters))
