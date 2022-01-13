@@ -74,7 +74,7 @@ elif dim_red == "PCA":
         elif pca_setting=="scree":
             pca = PCA(n_components=60)
             plotdata = pca.fit_transform(grads)
-            sns.lineplot(x=np.arange(pca.n_components_) + 1, y=pca.explained_variance_ratio_, markers=["o"])
+            sns.lineplot(np.arange(pca.n_components_) + 1, pca.explained_variance_ratio_, marker="o")
             plt.title("Scree plot for PCs of gradients, "+which_data)
             plt.xlabel("Principal component")
             plt.ylabel("Explained variance")
