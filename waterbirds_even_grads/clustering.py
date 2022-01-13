@@ -18,7 +18,7 @@ pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
-which_data = "train"
+which_data = "val"
 
 data_dir = "weight_bias_grads_"+which_data+".npy"
 grads = np.load(data_dir)
@@ -74,7 +74,7 @@ elif dim_red == "PCA":
         elif pca_setting=="scree":
             pca = PCA(n_components=100)
             plotdata = pca.fit_transform(grads)
-            plt.plot(np.arange(pca.n_components_) + 1, pca.explained_variance_ratio_, 'o-')
+            sns.lineplot(x=np.arange(pca.n_components_) + 1, y=pca.explained_variance_ratio_, markers=True)
             plt.title("Scree plot for PCs of gradients, "+which_data)
             plt.xlabel("Principal component")
             plt.ylabel("Explained variance")
