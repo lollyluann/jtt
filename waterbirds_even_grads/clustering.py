@@ -18,7 +18,7 @@ bias_separate = False
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
-which_data = "val"
+which_data = "train"
 
 data_dir = "weight_bias_grads_"+which_data+".npy"
 grads = np.load(data_dir)
