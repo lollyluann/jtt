@@ -11,10 +11,10 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 
-compute_dists = True
+compute_dists = False
 do_dbscan = False
 do_agg = False
-bias_separate = False
+pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
@@ -31,7 +31,7 @@ if compute_dists:
     avg_distance = distance_matrix.mean()
     print("Avg pairwise " + dist_metric + " distance:", avg_distance)
     _ = plt.hist(distance_matrix, bins='auto')
-    plt.title("Histogram of pairwise " +dist_metric+" distances")
+    plt.title("Histogram of pairwise " +dist_metric+" distances, "+which_data)
     plt.savefig("histogram_dists_"+dist_metric+"_"+which_data+".pdf")
 
     def square_to_condensed(i, j, n):
@@ -55,6 +55,7 @@ if compute_dists:
     print(avgs_groups)
     fig = plt.figure()
     ax = sns.heatmap(avgs_groups)
+    plt.title("Average between group " +dist_metric+" distances, "+which_data)
     plt.savefig(dist_metric+"_group_distances_heatmap_"+which_data+".pdf")
 
 if dim_red == "MDS":
@@ -67,10 +68,18 @@ if dim_red == "MDS":
 elif dim_red == "PCA":
     print("Dimensionality reduction via PCA")
     if not os.path.exists("pca_data_"+which_data+".npy") or overwrite:
-        if bias_separate:
+        if pca_setting=="bias_separate":
             plotdata = PCA(n_components=2).fit_transform(grads[:,:-1])
             plotdata = np.append(plotdata, np.array([grads[:,-1]]).T, axis=1)
-        else:
+        elif pca_setting=="scree":
+            pca = PCA(n_components=100)
+            plotdata = pca.fit_transform(grads)
+            plt.plot(np.arange(pca.n_components_) + 1, pca.explained_variance_ratio_, 'o-')
+            plt.title("Scree plot for PCs of gradients, "+which_data)
+            plt.xlabel("Principal component")
+            plt.ylabel("Explained variance")
+            plt.savefig("scree_plot_"+which_data+".pdf")
+        elif pca_setting=="3D":
             plotdata = PCA(n_components=3).fit_transform(grads)
         np.save("pca_data_"+which_data+".npy", plotdata)
     else:
