@@ -11,9 +11,10 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 
-do_dbscan = True
+do_dbscan = False
 compute_dists = do_dbscan or True 
 do_agg = False
+do_kmeans = True
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
@@ -101,6 +102,15 @@ if do_dbscan:
         ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
         legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
         plt.savefig("cluster_ep_" + which_data + "_" + str(ep)[:5] + ".pdf")
+
+if do_kmeans:
+    km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
+    ax.text2D(0.05, 0.95, "kmeans clusters, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
+    legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
+    plt.savefig("cluster_kmeans_" + which_data + ".pdf")
 
 if do_agg:
     agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
