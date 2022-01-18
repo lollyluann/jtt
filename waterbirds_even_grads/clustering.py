@@ -16,7 +16,7 @@ compute_dists = do_dbscan or True
 do_agg = False
 do_kmeans = False
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
-dim_red = "PCA"
+dim_red = "MDS"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
 which_data = "train"
@@ -76,7 +76,9 @@ if compute_dists:
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")
     if not os.path.exists("mds_data_"+which_data+".npy"):
-        plotdata = MDS(n_components=3).fit_transform(grads)
+        m = dist_metric if dist_metric=="euclidean" else "precomputed"
+        input_d = grads if dist_metric=="euclidean" else squareform(distance_matrix)
+        plotdata = MDS(n_components=3, dissimilarity=m).fit_transform(input_d)
         np.save("mds_data_"+which_data+".npy", plotdata)
     else:
         plotdata = np.load("mds_data_"+which_data+".npy")
