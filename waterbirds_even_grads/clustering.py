@@ -27,7 +27,7 @@ train_l = np.load("../" + which_data +"_data_l_resnet50.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
-def make_gif(data, color, title, fname, elev=30, granularity=12):
+def make_gif(data, color, title, fname, elev=30, granularity=6):
     print("Generating images from different angles.")
     for angle in tqdm(range(0, 360, granularity)):
         fig = plt.figure()
@@ -37,7 +37,7 @@ def make_gif(data, color, title, fname, elev=30, granularity=12):
 
         ax.text2D(0.05, 0.95, title, transform=ax.transAxes)
         legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-        plt.savefig(fname + "_" + str(angle) + ".png")
+        plt.savefig("3dplotfiles/" + fname + "_" + str(angle) + ".png")
         plt.close(fig)       
 
 
