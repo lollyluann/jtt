@@ -14,7 +14,7 @@ from sklearn.metrics import confusion_matrix
 do_dbscan = False
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = True
+do_kmeans = False
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
@@ -26,6 +26,20 @@ grads = np.load(data_dir)
 train_l = np.load("../" + which_data +"_data_l_resnet50.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
+
+def make_gif(data, color, title, fname, elev=30, granularity=12):
+    print("Generating images from different angles.")
+    for angle in tqdm(range(0, 360, granularity)):
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        scattered = ax.scatter(data[:,0], data[:,1], data[:,2], c=color, cmap="Spectral")
+        ax.view_init(elev, angle)
+
+        ax.text2D(0.05, 0.95, title, transform=ax.transAxes)
+        legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
+        plt.savefig(fname + "_" + str(angle) + ".png")
+        plt.close(fig)       
+
 
 if compute_dists:
     distance_matrix = pdist(grads, metric=dist_metric)
@@ -139,10 +153,14 @@ for i in range(len(train_y)):
         else: label.append(3)
 '''
 
+title = dim_red+": 4 groups + outliers, "+which_data
+fname = dim_red+"_ground_truth_memberships_"+which_data
+make_gif(plotdata, train_l, title, fname)
+'''
 fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
 ax.text2D(0.05, 0.95, dim_red+": 4 groups + outliers, "+which_data, transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Groups")
 ax.add_artist(legend)
-plt.savefig(dim_red+"_ground_truth_memberships_"+which_data+".pdf")
+plt.savefig(dim_red+"_ground_truth_memberships_"+which_data+".pdf")'''
