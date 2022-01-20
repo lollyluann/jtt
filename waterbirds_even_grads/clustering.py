@@ -48,6 +48,7 @@ if compute_dists:
     _ = plt.hist(distance_matrix, bins='auto')
     plt.title("Histogram of pairwise " +dist_metric+" distances, "+which_data)
     plt.savefig("histogram_dists_"+dist_metric+"_"+which_data+".pdf")
+    plt.close()
 
     _ = plt.plot(np.sort(distance_matrix, axis=0))
     plt.title("k-distance plot of pairwise " + dist_metric + "_" + which_data + ".pdf")
