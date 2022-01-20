@@ -107,9 +107,9 @@ elif dim_red == "PCA":
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
 
-num_pcs = 5
+num_pcs = 0
 if do_dbscan:
-    eps_options = [avg_distance*i/100 for i in range(30, 135, 100)]
+    eps_options = [avg_distance*i/100 for i in range(40, 145, 100)]
     for ep in eps_options:
         dbscan = cluster.DBSCAN(eps=ep, min_samples=1001, metric=dist_metric)
         clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs])
