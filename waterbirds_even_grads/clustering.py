@@ -16,7 +16,7 @@ compute_dists = do_dbscan or True
 do_agg = False
 do_kmeans = False
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
-dim_red = "none" #"MDS"
+dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
 overwrite = True
 which_data = "train"
@@ -101,16 +101,13 @@ elif dim_red == "PCA":
         np.save("pca_data_"+which_data+".npy", plotdata)
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
-else:
-    plotdata = grads
 
 num_pcs = 5
-num_pcs = -1
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(80, 600, 100)]
     for ep in eps_options:
         dbscan = cluster.DBSCAN(eps=ep, min_samples=5, metric=dist_metric)
-        clustered = dbscan.fit_predict(plotdata[:,:num_pcs])
+        clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs])
         num_clusters = np.unique(clustered).size-1
         print("eps={} yielded {} clusters".format(ep, num_clusters))
         print(Counter(clustered))
