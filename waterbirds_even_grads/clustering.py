@@ -87,8 +87,9 @@ if compute_dists:
     for i in range(5):
         for j in range(5):
             ax = fig.add_subplot(5, 5, c)
-            ax.set_xlim(0.25, 1.5)
+            ax.set_xlim(0.25, 2)
             plt.xticks(fontsize=7)
+            plt.yticks(fontsize=7)
             plt.hist(nums_groups[i][j], bins='auto')
             c+=1
     fig.tight_layout()
