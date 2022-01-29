@@ -63,9 +63,12 @@ if compute_dists:
     # compute average/histogram within and cross group distances
     sums_groups = np.zeros((5,5))
     counts_groups = np.zeros((5,5))
+    nums_groups = {i:{j:[] for j in range(5)} for i in range(5)}
     n = grads.shape[0]
     for a in tqdm(range(grads.shape[0])):
         for b in range(a+1, grads.shape[0]):
+            nums_groups[train_l[a]][train_l[b]].append(distance_matrix[square_to_condensed(a, b, n)])
+            nums_groups[train_l[b]][train_l[a]].append(distance_matrix[square_to_condensed(a, b, n)])
             sums_groups[train_l[a], train_l[b]] += distance_matrix[square_to_condensed(a, b, n)]
             sums_groups[train_l[b], train_l[a]] += distance_matrix[square_to_condensed(a, b, n)]
             counts_groups[train_l[a], train_l[b]] += 1
@@ -77,6 +80,17 @@ if compute_dists:
     ax = sns.heatmap(avgs_groups)
     plt.title("Average between group " +dist_metric+" distances, "+which_data)
     plt.savefig(dist_metric+"_group_distances_heatmap_"+which_data+".pdf")
+
+    print("Plotting matrix of histograms...")
+    fig = plt.figure()
+    c = 1
+    for i in range(5):
+        for j in range(5):
+            ax = fig.add_subplot(5, 5, c)
+            plt.hist(nums_groups[i][j], bins='auto')
+            c+=1
+    fig.tight_layout()
+    plt.savefig(dist_metric + "_cross_group_distances_"+which_data+".pdf")
 
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")
