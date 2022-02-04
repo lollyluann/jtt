@@ -2,6 +2,7 @@ import os
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn import preprocessing
 import sklearn.cluster as cluster
 from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
@@ -10,11 +11,13 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
+#from spherecluster import SphericalKMeans
 
 do_dbscan = True
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = False
+do_kmeans = True
+spherekmeans = True and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"euclidean"
@@ -124,7 +127,7 @@ elif dim_red == "PCA":
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
 
-num_pcs = 0
+num_pcs = -1
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(40, 145, 100)]
     for ep in eps_options:
@@ -142,7 +145,11 @@ if do_dbscan:
         plt.savefig("cluster_ep_" + which_data + "_" + str(ep)[:5] + ".pdf")
 
 if do_kmeans:
-    km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
+    if spherekmeans:
+        norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
+    else:
+        km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
     fig = plt.figure()
     ax = Axes3D(fig)
     scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
