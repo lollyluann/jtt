@@ -150,7 +150,7 @@ if do_dbscan:
 if do_kmeans:
     if spherekmeans:
         norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
-        km = cluster.KMeans(n_clusters=50).fit_predict(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
     else:
         km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
     c_counts = Counter(km)
