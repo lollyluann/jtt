@@ -157,7 +157,22 @@ if do_kmeans:
     print("Kmeans results: ", c_counts)
     num_real_clusters = sum([1 for i in c_counts if c_counts[i]>30])
     print(num_real_clusters, "clusters with >30 points")
+
     km = np.array([i if c_counts[i]>30 else -1 for i in km])
+    kmap = {}
+    new_km = []
+    j = 0
+    for i in km:
+        if i==-1:
+            new_km.append(-1)
+        else:
+            if i in kmap:
+                new_km.append(kmap[i])
+            else:
+                new_km.append(j)
+                kmap[i] = j
+                j += 1
+    km = np.array(new_km)
     print(Counter(km))
     np.save("../cub/data/waterbird_complete95_forest2water2/cluster_memberships.npy", km)
     fig = plt.figure()
