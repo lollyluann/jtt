@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix
 do_dbscan = True
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = True
+do_kmeans = False
 spherekmeans = True and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
@@ -129,27 +129,31 @@ elif dim_red == "PCA":
 
 num_pcs = -1
 if do_dbscan:
-    eps_options = [avg_distance*i/100 for i in range(40, 145, 100)]
+    eps_options = [avg_distance*i/100 for i in range(10, 500, 20)]
+    ms_options = list(range(1, 100, 5))
     for ep in eps_options:
-        dbscan = cluster.DBSCAN(eps=ep, min_samples=1001, metric=dist_metric)
-        clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs])
-        num_clusters = np.unique(clustered).size-1
-        print("eps={} yielded {} clusters".format(ep, num_clusters))
-        print(Counter(clustered))
+        for ms in ms_options:
+            dbscan = cluster.DBSCAN(eps=ep, min_samples=1001, metric=dist_metric)
+            clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs])
+            num_clusters = np.unique(clustered).size-1
+            print("eps={} ms={} yielded {} clusters".format(ep, ms, num_clusters))
+            print(Counter(clustered))
 
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
-        ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
-        legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-        plt.savefig("cluster_ep_" + which_data + "_" + str(ep)[:5] + ".pdf")
+            if num_clusters > 2:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
+                ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
+                legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
+                plt.savefig("cluster_" + which_data + "_ep_" + str(ep)[:5] + "_ms_" + ms + ".pdf")
 
 if do_kmeans:
     if spherekmeans:
         norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
-        km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
     else:
-        km = cluster.KMeans(n_clusters=5).fit_predict(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
+    np.save("../cub/data/waterbird_complete95_forest2water2/cluster_memberships.npy", km)
     fig = plt.figure()
     ax = Axes3D(fig)
     scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
