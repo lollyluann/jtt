@@ -127,14 +127,14 @@ elif dim_red == "PCA":
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
 
-num_pcs = -1
+num_pcs = 3
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(10, 500, 20)]
     ms_options = list(range(1, 100, 5))
     for ep in eps_options:
         for ms in ms_options:
             dbscan = cluster.DBSCAN(eps=ep, min_samples=1001, metric=dist_metric)
-            clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs])
+            clustered = dbscan.fit_predict(plotdata[:,:num_pcs]) #grads
             num_clusters = np.unique(clustered).size-1
             print("eps={} ms={} yielded {} clusters".format(ep, ms, num_clusters))
             print(Counter(clustered))
