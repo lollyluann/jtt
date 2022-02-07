@@ -150,14 +150,14 @@ if do_dbscan:
 if do_kmeans:
     if spherekmeans:
         norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
-        km = cluster.KMeans(n_clusters=100).fit_predict(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=50).fit_predict(plotdata[:,:num_pcs])
     else:
         km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
     c_counts = Counter(km)
     print("Kmeans results: ", c_counts)
-    num_real_clusters = sum([1 for i in c_counts if c_counts[i]>10])
-    print(num_real_clusters, "clusters with >10 points")
-    km = np.array([i if c_counts[i]>10 else -1 for i in km])
+    num_real_clusters = sum([1 for i in c_counts if c_counts[i]>30])
+    print(num_real_clusters, "clusters with >20 points")
+    km = np.array([i if c_counts[i]>20 else -1 for i in km])
     np.save("../cub/data/waterbird_complete95_forest2water2/cluster_memberships.npy", km)
     fig = plt.figure()
     ax = Axes3D(fig)
