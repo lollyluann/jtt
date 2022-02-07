@@ -13,10 +13,10 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 #from spherecluster import SphericalKMeans
 
-do_dbscan = True
+do_dbscan = False
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = False
+do_kmeans = True
 spherekmeans = True and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
@@ -127,7 +127,7 @@ elif dim_red == "PCA":
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
 
-num_pcs = 3
+num_pcs = -1
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(10, 500, 20)]
     ms_options = list(range(1, 100, 5))
@@ -150,9 +150,14 @@ if do_dbscan:
 if do_kmeans:
     if spherekmeans:
         norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
-        km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
+        km = cluster.KMeans(n_clusters=100).fit_predict(plotdata[:,:num_pcs])
     else:
         km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
+    c_counts = Counter(km)
+    print("Kmeans results: ", c_counts)
+    num_real_clusters = sum([1 for i in c_counts if c_counts[i]>10])
+    print(num_real_clusters, "clusters with >10 points")
+    km = np.array([i if c_counts[i]>10 else -1 for i in km])
     np.save("../cub/data/waterbird_complete95_forest2water2/cluster_memberships.npy", km)
     fig = plt.figure()
     ax = Axes3D(fig)
