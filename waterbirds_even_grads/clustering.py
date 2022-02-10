@@ -13,10 +13,10 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 #from spherecluster import SphericalKMeans
 
-do_dbscan = False
+do_dbscan = True
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = True
+do_kmeans = False
 spherekmeans = True and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
@@ -133,8 +133,8 @@ if do_dbscan:
     ms_options = list(range(1, 100, 5))
     for ep in eps_options:
         for ms in ms_options:
-            dbscan = cluster.DBSCAN(eps=ep, min_samples=1001, metric=dist_metric)
-            clustered = dbscan.fit_predict(plotdata[:,:num_pcs]) #grads
+            dbscan = cluster.DBSCAN(eps=ep, min_samples=ms, metric=dist_metric)
+            clustered = dbscan.fit_predict(grads) #plotdata[:,:num_pcs]) #grads
             num_clusters = np.unique(clustered).size-1
             print("eps={} ms={} yielded {} clusters".format(ep, ms, num_clusters))
             print(Counter(clustered))
@@ -145,7 +145,7 @@ if do_dbscan:
                 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=clustered, cmap="Spectral")
                 ax.text2D(0.05, 0.95, str(num_clusters) + " clusters + outliers, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
                 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-                plt.savefig("cluster_" + which_data + "_ep_" + str(ep)[:5] + "_ms_" + ms + ".pdf")
+                plt.savefig("cluster_" + which_data + "_ep_" + str(ep)[:5] + "_ms_" + str(ms) + ".pdf")
 
 if do_kmeans:
     if spherekmeans:
