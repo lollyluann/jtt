@@ -34,7 +34,6 @@ def spherical_kmeans(X, k, s_iters=5):
         new_centroids = pd.DataFrame(X).groupby(by=cluster).mean().values
         if diff==0:
             new_centroids = preprocessing.normalize(new_centroids)
-            print(new_centroids, new_centroids.shape)
             sphere_it -= 1
         # if centroids are same then exit
         if np.count_nonzero(centroids-new_centroids) == 0:
@@ -54,7 +53,7 @@ print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
 norm_data = preprocessing.normalize(plotdata) #grads) #plotdata[:,:num_pcs])
-cents, km = spherical_kmeans(norm_data, k=4, s_iters=2)
+cents, km = spherical_kmeans(norm_data, k=10, s_iters=2)
 print(cents)
 
 c_counts = Counter(km)
@@ -83,6 +82,6 @@ print(Counter(km))
 fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
-ax.text2D(0.05, 0.95, "kmeans clusters, "+which_data, transform=ax.transAxes)
+ax.text2D(0.05, 0.95, "spherical kmeans clusters, "+which_data, transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-plt.savefig("cluster_kmeans_5pcs_sphere_" + which_data + ".pdf")
+plt.savefig("cluster_kmeans_5pcs_sphere_init10_" + which_data + ".pdf")
