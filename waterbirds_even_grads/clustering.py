@@ -11,12 +11,12 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
-#from spherecluster import SphericalKMeans
+from spherical_kmeans import spherical_kmeans
 
-do_dbscan = True
+do_dbscan = False
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = False
+do_kmeans = True
 spherekmeans = True and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
@@ -127,7 +127,7 @@ elif dim_red == "PCA":
     else:
         plotdata = np.load("pca_data_"+which_data+".npy")
 
-num_pcs = 5
+num_pcs = -1
 if do_dbscan:
     eps_options = [avg_distance*i/100 for i in range(10, 500, 20)]
     ms_options = list(range(1, 100, 5))
@@ -149,8 +149,8 @@ if do_dbscan:
 
 if do_kmeans:
     if spherekmeans:
-        norm_data = preprocessing.normalize(plotdata[:,:num_pcs])
-        km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
+        norm_data = preprocessing.normalize(grads) #plotdata[:,:num_pcs])
+        km = spherical_kmeans(norm_data, k=4, s_iters=5)
     else:
         km = cluster.KMeans(n_clusters=4).fit_predict(plotdata[:,:num_pcs])
     c_counts = Counter(km)
@@ -180,7 +180,7 @@ if do_kmeans:
     scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
     ax.text2D(0.05, 0.95, "kmeans clusters, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
     legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-    plt.savefig("cluster_kmeans_" + which_data + ".pdf")
+    plt.savefig("cluster_kmeans_sphere_" + which_data + ".pdf")
 
 if do_agg:
     agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
