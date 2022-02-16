@@ -48,11 +48,12 @@ which_data = "train"
 
 data_dir = "weight_bias_grads_"+which_data+".npy"
 grads = np.load(data_dir)
+plotdata = PCA(n_components=5).fit_transform(grads)
 train_l = np.load("../" + which_data +"_data_l_resnet50.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
-norm_data = preprocessing.normalize(grads) #plotdata[:,:num_pcs])
+norm_data = preprocessing.normalize(plotdata) #grads) #plotdata[:,:num_pcs])
 cents, km = spherical_kmeans(norm_data, k=4, s_iters=2)
 print(cents)
 
@@ -79,10 +80,9 @@ km = np.array(new_km)
 print(Counter(km))
 #np.save("../cub/data/waterbird_complete95_forest2water2/cluster_memberships.npy", km)
 
-plotdata = PCA(n_components=3).fit_transform(grads)
 fig = plt.figure()
 ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
 ax.text2D(0.05, 0.95, "kmeans clusters, "+which_data, transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-plt.savefig("cluster_kmeans_sphere_" + which_data + ".pdf")
+plt.savefig("cluster_kmeans_5pcs_sphere_" + which_data + ".pdf")
