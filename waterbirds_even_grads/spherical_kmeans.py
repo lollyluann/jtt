@@ -26,7 +26,7 @@ def spherical_kmeans(X, k, s_iters=5):
             mn_dist = float('inf')
             # distance of point from all centroids
             for ix, centroid in enumerate(centroids):
-                d = np.sqrt((centroid[0]-row[0])**2 + (centroid[1]-row[1])**2)
+                d = np.sum(np.square(centroid-row))
                 # get closest centroid
                 if mn_dist > d:
                     mn_dist = d
@@ -39,7 +39,7 @@ def spherical_kmeans(X, k, s_iters=5):
         if np.count_nonzero(centroids-new_centroids) == 0:
             print("Switching to centroid normalization")
             diff=0
-        else: centroids = new_centroids
+        centroids = new_centroids
     return centroids, cluster
 
 
@@ -53,7 +53,7 @@ print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 
 norm_data = preprocessing.normalize(grads) #plotdata[:,:num_pcs])
-cents, km = spherical_kmeans(norm_data, k=4, s_iters=3)
+cents, km = spherical_kmeans(norm_data, k=4, s_iters=5)
 print(cents)
 
 c_counts = Counter(km)
@@ -84,4 +84,4 @@ ax = Axes3D(fig)
 scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
 ax.text2D(0.05, 0.95, "spherical kmeans clusters, "+which_data, transform=ax.transAxes)
 legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-plt.savefig("cluster_kmeans_sphere3_" + which_data + ".pdf")
+plt.savefig("cluster_kmeans_sphere_" + which_data + ".pdf")
