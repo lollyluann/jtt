@@ -14,7 +14,7 @@ from data.data import dataset_attributes, shift_types, prepare_data, log_data
 from data import dro_dataset
 from data import folds
 from utils import set_seed, Logger, CSVBatchLogger, log_args, get_model, hinge_loss
-from train import train
+from train2 import train
 from data.folds import Subset, ConcatDataset
 
 
@@ -195,6 +195,7 @@ def main(args):
         epoch_offset=epoch_offset,
         csv_name=args.fold,
         wandb=wandb if args.wandb else None,
+        exclude_outliers=args.exclude_outliers
     )
 
     train_csv_logger.close()
@@ -297,12 +298,13 @@ if __name__ == "__main__":
     )
     parser.add_argument("--fold", default=None)
     # Our groups (upweighting/dro_ours)
-    parser.add_argument(
-        "--metadata_path",
+    parser.add_argument( "--metadata_path",
         default=None,
         help="path to metadata csv",
     )
     parser.add_argument("--aug_col", default=None)
+    parser.add_argument("--override_groups_file", default=None)
+    parser.add_argument("--exclude_outliers", default=False, action=argparse.BooleanOptionalAction)
 
     args = parser.parse_args()
     

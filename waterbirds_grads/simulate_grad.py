@@ -176,6 +176,10 @@ evaluate(model, test_x, full_detach(test_y), test_l)
 
 val_x = torch.tensor(np.load("../val_data_resnet50.npy"), dtype=torch.float64, device=device, requires_grad=True)
 val_y = torch.tensor(np.load("../val_data_y_resnet50.npy"), device=device)
+val_l = np.load("../val_data_l_resnet50.npy")
+
+print("Validation data accuracies")
+evaluate(model, val_x, full_detach(val_y), val_l)
 
 export_grads(val_x, val_y, model, optimizer, "val")
 export_grads(test_x, test_y, model, optimizer, "test")

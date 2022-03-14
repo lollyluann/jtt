@@ -21,7 +21,8 @@ class CUBDataset(ConfounderDataset):
         confounder_names,
         augment_data=False,
         model_type=None,
-        metadata_csv_name="metadata.csv"
+        metadata_csv_name="metadata.csv",
+        override_groups_file=None
     ):
         self.root_dir = root_dir
         self.target_name = target_name
@@ -45,6 +46,10 @@ class CUBDataset(ConfounderDataset):
 
         # Get the y values
         self.y_array = self.metadata_df["y"].values
+        if override_groups_file and override_groups_file!="None":
+            self.glabel_array = np.load(os.path.join(self.data_dir, override_groups_file)).astype("int")
+        else:
+            self.glabel_array = self.metadata_df["group_labels"].values
         self.n_classes = 2
 
         # We only support one confounder for CUB for now
@@ -53,8 +58,13 @@ class CUBDataset(ConfounderDataset):
         # Map to groups
         self.n_groups = pow(2, 2)
         assert self.n_groups == 4, "check the code if you are running otherwise"
-        self.group_array = (self.y_array * (self.n_groups / 2) +
-                            self.confounder_array).astype("int")
+        if override_groups_file and override_groups_file!="None":
+            # read in file and set as group array
+            self.group_array = np.load(os.path.join(self.data_dir, override_groups_file)).astype("int")
+            assert np.unique(self.group_array).size == self.n_groups #+ 1
+        else:
+            self.group_array = (self.y_array * (self.n_groups / 2) +
+                                self.confounder_array).astype("int")
 
         # Extract filenames and splits
         self.filename_array = self.metadata_df["img_filename"].values

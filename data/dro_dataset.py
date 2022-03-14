@@ -18,9 +18,11 @@ class DRODataset(Dataset):
 
         group_array = self.get_group_array()
         y_array = self.get_label_array()
-
+        glabel_array = self.get_glabel_array()
+    
         self._group_array = torch.LongTensor(group_array)
         self._y_array = torch.LongTensor(y_array)
+        self._glabel_array = torch.LongTensor(glabel_array)
         self._group_counts = ((torch.arange(
             self.n_groups).unsqueeze(1) == self._group_array).sum(1).float())
 
@@ -36,6 +38,12 @@ class DRODataset(Dataset):
     def get_group_array(self):
         if self.process_item is None:
             return self.dataset.get_group_array()
+        else:
+            raise NotImplementedError
+
+    def get_glabel_array(self):
+        if self.process_item is None:
+            return self.dataset.get_glabel_array()
         else:
             raise NotImplementedError
 

@@ -42,7 +42,8 @@ def prepare_confounder_data(args, train, return_full_dataset=False):
             confounder_names=args.confounder_names,
             model_type=args.model,
             augment_data=args.augment_data,
-            metadata_csv_name=args.metadata_csv_name if (args.metadata_csv_name is not None) else "metadata.csv"
+            metadata_csv_name=args.metadata_csv_name if (args.metadata_csv_name is not None) else "metadata.csv",
+            override_groups_file=args.override_groups_file
         )
     else: 
         full_dataset = confounder_settings[args.dataset]["constructor"](

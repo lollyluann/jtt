@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import numpy as np
 from tqdm import tqdm
 
-from utils import AverageMeter, accuracy
+from utils import AverageMeter, accuracy, full_detach
 from loss import LossComputer
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
@@ -34,7 +34,8 @@ def run_epoch(
     csv_name=None,
     wandb_group=None,
     wandb=None,
-    data_grad=False
+    data_grad=False,
+    exclude_outliers=False
 ):
     """
     scheduler is only used inside this function if model is bert.
@@ -56,22 +57,39 @@ def run_epoch(
         prog_bar_loader = loader
 
     if data_grad:
-        print("Will extract gradients with respect to inputs for test set")
+        print("Will extract gradients with respect to weights of last two FC layers")
 
-    input_grads = []
+    all_last_grads = []
+    all_penult_grads = []
+    
+    if exclude_outliers:
+        print("Excluding outliers")
 
     with torch.set_grad_enabled(is_training or data_grad):
 
         for batch_idx, batch in enumerate(prog_bar_loader):
-            batch = tuple(t.to(device) for t in batch)
+            if not exclude_outliers:
+                batch = tuple(t.to(device) for t in batch)
             x = batch[0]
             y = batch[1]
             g = batch[2]
-            data_idx = batch[3]
-            
+            l = batch[3]
+            data_idx = batch[4]
+
+            if exclude_outliers:
+                non_outliers = np.argwhere(l!=4).squeeze()
+                #print(l.size(0)-non_outliers.size(0), "data points omitted")
+                x = x[non_outliers].to(device)
+                y = y[non_outliers].to(device)
+                g = g[non_outliers].to(device)
+                l = l[non_outliers].to(device)
+                data_idx = data_idx[non_outliers].to(device)
+
             if data_grad:
-                x.requires_grad = True
-                x.retain_grad()
+                # old code related to grads wrt input
+                #x.requires_grad = True
+                #x.retain_grad()
+                continue
     
             if args.model.startswith("bert"):
                 input_ids = x[:, :, 0]
@@ -129,9 +147,17 @@ def run_epoch(
                     optimizer.zero_grad()
                     loss_main.backward()
                     optimizer.step()
-            elif data_grad:
-                loss_main.backward()
-                model.zero_grad()
+            if data_grad:
+                for i, pt in enumerate(x):
+                    ptpred = torch.squeeze(model(pt[None, :]), dim=1)
+                    loss2 = loss_computer.criterion(ptpred, y[i:i+1].double())
+                    loss2.backward()
+                    last_grad = full_detach(model.fc.fc2.grad)
+                    penult_grad = full_detach(model.fc.fc1.grad)
+                    all_last_grads.append(last_grad.copy())
+                    all_penult_grads.appen(penult_grad.copy())
+                    with torch.no_grad():
+                        model.zero_grad()
 
             if is_training and (batch_idx + 1) % log_every == 0:
                 run_stats = loss_computer.get_stats(model, args)
@@ -148,17 +174,18 @@ def run_epoch(
                     wandb_stats["batch_idx"] = batch_idx
                     wandb.log(wandb_stats)
         
-            if data_grad:
-                save_dir = "/".join(csv_logger.path.split("/")[:-1])
-                input_grads.append(x.grad.squeeze().detach().cpu().numpy())
-
-        if data_grad and epoch>98:
-            input_grads = np.stack(input_grads[:-1], axis=0)
+        if data_grad:
+            #input_grads = np.stack(input_grads[:-1], axis=0)
+            all_last_grads = np.array(all_last_grads)
+            all_penult_grads = np.array(all_penult_grads)
+            save_dir = "/".join(csv_logger.path.split("/")[:-1])
             np.save(
-                os.path.join(save_dir, 
-                                f"grad_to_input_epoch_{epoch}.npy"),
-                input_grads)
-            print("Saved input gradients to grad_to_input_epoch_{epoch}.npy")
+                os.path.join(save_dir, f"last_fc_grads_epoch_{epoch}.npy"),
+                all_last_grads)
+            np.save(
+                os.path.join(save_dir, f"penult_fc_grads_epoch_{epoch}.npy"),
+                all_penult_grads)
+            print("Saved gradients to last/penult_fc_grads_epoch_{epoch}.npy")
 
         if run_name is not None:
             save_dir = "/".join(csv_logger.path.split("/")[:-1])
@@ -200,6 +227,7 @@ def train(
     epoch_offset,
     csv_name=None,
     wandb=None,
+    exclude_outliers=False
 ):
     model = model.to(device)
 
@@ -294,6 +322,7 @@ def train(
             scheduler=scheduler,
             wandb_group="train",
             wandb=wandb,
+            exclude_outliers=exclude_outliers
         )
 
         logger.write(f"\nValidation:\n")
@@ -323,6 +352,7 @@ def train(
             csv_name=csv_name,
             wandb_group="val",
             wandb=wandb,
+            exclude_outliers=exclude_outliers
         )
 
         # Test set; don't print to avoid peeking
@@ -353,7 +383,8 @@ def train(
                 csv_name=csv_name,
                 wandb_group="test",
                 wandb=wandb,
-                data_grad=True
+                data_grad=False,
+                exclude_outliers=False
             )
 
         # Inspect learning rates

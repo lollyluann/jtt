@@ -9,6 +9,8 @@ import torch.nn as nn
 import torchvision
 from models import model_attributes
 
+def full_detach(x):
+    return x.squeeze().detach().cpu().numpy()
 
 class Logger(object):
     def __init__(self, fpath=None, mode="w"):

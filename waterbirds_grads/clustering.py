@@ -32,7 +32,7 @@ if compute_dists:
     print("Avg pairwise " + dist_metric + " distance:", avg_distance)
     _ = plt.hist(distance_matrix, bins='auto')
     plt.title("Histogram of pairwise " +dist_metric+" distances")
-    plt.savefig("histogram_dists_"+dist_metric+".pdf")
+    plt.savefig("histogram_dists_"+dist_metric+"_"+which_data+".pdf")
 
     def square_to_condensed(i, j, n):
         if i==j: return 0
@@ -55,7 +55,7 @@ if compute_dists:
     print(avgs_groups)
     fig = plt.figure()
     ax = sns.heatmap(avgs_groups)
-    plt.savefig(dist_metric+"_group_distances_heatmap"+which_data+".pdf")
+    plt.savefig(dist_metric+"_group_distances_heatmap_"+which_data+".pdf")
 
 if dim_red == "MDS":
     print("Dimensionality reduction via MDS")

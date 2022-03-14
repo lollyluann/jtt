@@ -146,6 +146,8 @@ def generate_downstream_commands(args):
                     + (f" --loss_type {loss_type}")
                     + (" --reweight_groups" if loss_type == "group_dro" else "")
                     + (f" --joint_dro_alpha {joint_dro_alpha}" if loss_type == "joint_dro" else "")
+                    + f" --override_groups_file {args.override_groups_file}"
+                    + (f" --exclude_outliers" if args.exclude_outliers else " --no-exclude_outliers")
                 )
 
                 file.write(
@@ -157,13 +159,14 @@ def generate_downstream_commands(args):
                     + (f" --loss_type {loss_type}")
                     + (" --reweight_groups" if loss_type == "group_dro" else "")
                     + (f" --joint_dro_alpha {joint_dro_alpha}" if loss_type == "joint_dro" else "")
+                    + f" --override_groups_file {args.override_groups_file}"
+                    + (f" --exclude_outliers" if args.exclude_outliers else " --no-exclude_outliers")
                 )
                 
                 file.write("\n")
                 file.write(final_text)
             print(f"\nsaved in {job_script_path}\n\n")
 #             subprocess.run(f"sbatch {job_script_path}", check=True, shell=True)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -197,6 +200,8 @@ if __name__ == "__main__":
     parser.add_argument("--csv_name",
                         type=str,
                         default="metadata_aug.csv")
+    parser.add_argument("--override_groups_file")
+    parser.add_argument("--exclude_outliers", default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument("--results_dir", type=str, default="results/")
     parser.add_argument(
         "--job_script_name",

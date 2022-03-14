@@ -22,7 +22,7 @@ class Subset(torch.utils.data.Dataset):
 
         self.group_array = self.get_group_array(re_evaluate=True)
         self.label_array = self.get_label_array(re_evaluate=True)
-        
+        self.glabel_array = self.get_glabel_array(re_evaluate=True) 
 
     def __getitem__(self, idx):
         return self.dataset[self.indices[idx]]
@@ -34,11 +34,27 @@ class Subset(torch.utils.data.Dataset):
         """Return an array [g_x1, g_x2, ...]"""
         # setting re_evaluate=False helps us over-write the group array if necessary (2-group DRO)
         if re_evaluate:
-            group_array = self.dataset.get_group_array()[self.indices]        
+            # come back
+            if self.indices.max() >= self.dataset.get_group_array().size:
+                group_array = self.dataset.get_group_array()
+            else:
+                group_array = self.dataset.get_group_array()[self.indices]        
+            print(len(group_array), len(self))
             assert len(group_array) == len(self)
             return group_array
         else:
             return self.group_array
+    
+    def get_glabel_array(self, re_evaluate=True):
+        if re_evaluate:
+            if self.indices.max() > self.dataset.get_glabel_array().size:
+                glabel_array = self.dataset.get_group_array()
+            else:
+                glabel_array = self.dataset.get_glabel_array()[self.indices]
+            assert len(glabel_array) == len(self)
+            return glabel_array
+        else:
+            return self.glabel_array
 
     def get_label_array(self, re_evaluate=True):
         if re_evaluate:
