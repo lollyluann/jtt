@@ -20,7 +20,7 @@ device = torch.device("cuda")
 pretrained = True
 n_classes = 2
 
-model_name = "pretrained-18"
+model_name = "fc"
 
 if model_name == "pretrained-50":
     model = torchvision.models.resnet50(pretrained=pretrained)
@@ -38,19 +38,6 @@ elif model_name == "fcfc":
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss(reduction="none")
-
-'''train(model,
-      criterion,
-      data,
-      logger,
-      train_csv_logger,
-      val_csv_logger,
-      test_csv_logger,
-      args,
-      epoch_offset=epoch_offset,
-      csv_name=fold,
-      wandb=wandb if use_wandb else None)
-'''
 
 class DefaultArgs:
     def __init__(self):
@@ -71,6 +58,7 @@ def get_data(which="train", get_grads=False):
     args = DefaultArgs()
 
     train_data, val_data, test_data = prepare_confounder_data(args, train=True, return_full_dataset=False)
+    all_data = prepare_confounder_data(args, train=False, return_full_dataset=True)
 
     train_loader = dro_dataset.get_loader(train_data,
                                           train=True,
@@ -87,21 +75,28 @@ def get_data(which="train", get_grads=False):
                                          reweight_groups=None,
                                          **loader_kwargs)
 
+    all_loader = dro_dataset.get_loader(all_data,
+                                        train=False,
+                                        reweight_groups=None,
+                                        **loader_kwargs)
+
     if which=="train":
         loader = train_loader
     elif which=="val":
         loader = val_loader
-    else: loader = test_loader
+    elif which=="test":
+        loader = test_loader
+    else: loader = all_loader
     
     all_embed = []
     all_y = []
     all_g = []
     all_l = []
+    all_idx = []
     gs = []
     
     for idx, batch in enumerate(tqdm(loader)):
         batch = tuple(t.to(device) for t in batch)
-        print("batch size", batch[0].shape[0])
         x = batch[0]
         y = batch[1]
         g = batch[2]
@@ -115,12 +110,14 @@ def get_data(which="train", get_grads=False):
             all_y = full_detach(y)
             all_g = full_detach(g)
             all_l = full_detach(l)
+            all_idx = full_detach(data_idx)
         else:
             all_embed = np.concatenate([all_embed, full_detach(outputs)], axis=0)
             all_y = np.concatenate([all_y, full_detach(y)])
             all_g = np.concatenate([all_g, full_detach(g)])
             all_l = np.concatenate([all_l, full_detach(l)])
-        
+            all_idx = np.concatenate([all_idx, full_detach(data_idx)])
+
         if get_grads:
             with torch.set_grad_enabled(True):
                 for i, pt in enumerate(x):
@@ -160,18 +157,34 @@ def get_data(which="train", get_grads=False):
     if get_grads:
         gs = np.stack(gs, axis=0)
         print("Gradients have shape", gs.shape)
-        np.save("weight_bias_"+model_name+"_grads_" + which + ".npy", gs)
         
     print(all_embed.shape)
     print(all_y.shape)
     print(all_g.shape)
-    np.save(which+"_data_resnet_" + model_name + ".npy", all_embed)
-    np.save(which+"_data_y_resnet_" + model_name + ".npy", all_y)
-    np.save(which+"_data_g_resnet_" + model_name + ".npy", all_g)
-    np.save(which+"_data_l_resnet_" + model_name + ".npy", all_l)
+    return gs, all_y, all_g, all_l, all_idx
 
+should_grads = True
+gs1, y1, g1, l1, i1 = get_data("train", get_grads=should_grads)
+gs2, y2, g2, l2, i2 = get_data("val", get_grads=should_grads)
+gs3, y3, g3, l3, i3 = get_data("test", get_grads=should_grads)
+gs5 = np.vstack([gs1, gs2, gs3])
+y5 = np.concatenate([y1, y2, y3])
+g5 = np.concatenate([g1, g2, g3])
+l5 = np.concatenate([l1, l2, l3])
+i5 = np.concatenate([i1, i2, i3])
 
-should_grads = False
-get_data("train", get_grads=should_grads)
-get_data("val", get_grads=should_grads)
-get_data("test", get_grads=should_grads)
+y5 = np.array([x for _, x in sorted(zip(i5, y5))])
+g5 = np.array([x for _, x in sorted(zip(i5, g5))])
+l5 = np.array([x for _, x in sorted(zip(i5, l5))])
+gs5 = np.array([x for _, x in sorted(zip(i5, gs5))])
+
+gs4, y4, g4, l4, i4 = get_data("all", get_grads=should_grads)
+y4 = np.array([x for _, x in sorted(zip(i4, y4))])
+g4 = np.array([x for _, x in sorted(zip(i4, g4))])
+l4 = np.array([x for _, x in sorted(zip(i4, l4))])
+gs4 = np.array([x for _, x in sorted(zip(i4, gs4))])
+
+print(np.array_equal(y5, y4))
+print(np.array_equal(g5, g4))
+print(np.array_equal(l5, l4))
+print(np.array_equal(gs5, gs4))

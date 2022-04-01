@@ -148,6 +148,7 @@ def generate_downstream_commands(args):
                     + (f" --joint_dro_alpha {joint_dro_alpha}" if loss_type == "joint_dro" else "")
                     + f" --override_groups_file {args.override_groups_file}"
                     + (f" --exclude_outliers" if args.exclude_outliers else " --no-exclude_outliers")
+                    + (f" --add_fc" if args.add_fc else " --no-add_fc")
                 )
 
                 file.write(
@@ -161,6 +162,7 @@ def generate_downstream_commands(args):
                     + (f" --joint_dro_alpha {joint_dro_alpha}" if loss_type == "joint_dro" else "")
                     + f" --override_groups_file {args.override_groups_file}"
                     + (f" --exclude_outliers" if args.exclude_outliers else " --no-exclude_outliers")
+                    + (f" --add_fc" if args.add_fc else " --no-add_fc")
                 )
                 
                 file.write("\n")
@@ -202,6 +204,8 @@ if __name__ == "__main__":
                         default="metadata_aug.csv")
     parser.add_argument("--override_groups_file")
     parser.add_argument("--exclude_outliers", default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument("--add_fc", default=False, action=argparse.BooleanOptionalAction)
+
     parser.add_argument("--results_dir", type=str, default="results/")
     parser.add_argument(
         "--job_script_name",

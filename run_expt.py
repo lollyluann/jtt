@@ -152,6 +152,7 @@ def main(args):
         n_classes=train_data.n_classes,
         dataset=args.dataset,
         log_dir=args.log_dir,
+        add_fc=args.add_fc,
     )
     if args.wandb:
         wandb.watch(model)
@@ -305,6 +306,7 @@ if __name__ == "__main__":
     parser.add_argument("--aug_col", default=None)
     parser.add_argument("--override_groups_file", default=None)
     parser.add_argument("--exclude_outliers", default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument("--add_fc", default=False, action=argparse.BooleanOptionalAction)
 
     args = parser.parse_args()
     

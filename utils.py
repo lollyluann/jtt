@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torchvision
 from models import model_attributes
+from collections import OrderedDict
 
 def full_detach(x):
     return x.squeeze().detach().cpu().numpy()
@@ -142,7 +143,7 @@ def hinge_loss(yhat, y):
     return torch_loss(yhat[:, 1], yhat[:, 0], y)
 
 
-def get_model(model, pretrained, resume, n_classes, dataset, log_dir):
+def get_model(model, pretrained, resume, n_classes, dataset, log_dir, add_fc=False):
     if resume:
         model = torch.load(os.path.join(log_dir, "last_model.pth"))
         d = train_data.input_size()[0]
@@ -158,7 +159,13 @@ def get_model(model, pretrained, resume, n_classes, dataset, log_dir):
     elif model == "resnet50":
         model = torchvision.models.resnet50(pretrained=pretrained)
         d = model.fc.in_features
-        model.fc = nn.Linear(d, n_classes)
+        if add_fc:
+            print("Adding intermediate fully connected layer")
+            model.fc = nn.Sequential(OrderedDict([
+                ('fc1', nn.Linear(d, 512)),
+                ('fc2', nn.Linear(512, n_classes))]))
+        else:
+            model.fc = nn.Linear(d, n_classes)
     elif model == "resnet34":
         model = torchvision.models.resnet34(pretrained=pretrained)
         d = model.fc.in_features

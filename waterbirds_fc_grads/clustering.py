@@ -22,7 +22,7 @@ pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"cosine" #"euclidean"
 overwrite = True
-which_data = "train"
+which_data = "test"
 
 data_dir = "../weight_bias_fc_grads_"+which_data+".npy"
 grads = np.load(data_dir)
@@ -116,6 +116,7 @@ elif dim_red == "PCA":
         elif pca_setting=="scree":
             pca = PCA(n_components=60)
             plotdata = pca.fit_transform(grads)
+            fig = plt.figure()
             sns.lineplot(np.arange(pca.n_components_) + 1, pca.explained_variance_ratio_, marker="o")
             plt.title("Scree plot for PCs of gradients, "+which_data)
             plt.xlabel("Principal component")
@@ -212,6 +213,7 @@ for i in range(len(train_y)):
 title = dim_red+": 4 groups + outliers, "+which_data
 fname = dim_red+"_ground_truth_memberships_"+which_data
 make_gif(plotdata, train_l, title, fname)
+
 '''
 fig = plt.figure()
 ax = Axes3D(fig)

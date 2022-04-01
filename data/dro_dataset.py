@@ -47,18 +47,12 @@ class DRODataset(Dataset):
         else:
             raise NotImplementedError
 
-    def get_label_array(self):
-        if self.process_item is None:
-            return self.dataset.get_label_array()
-        else:
-            raise NotImplementedError
-
     def __len__(self):
         return len(self.dataset)
 
     def group_counts(self):
         return self._group_counts
-
+    
     def class_counts(self):
         return self._y_counts
 

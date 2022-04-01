@@ -12,11 +12,11 @@ from utils import AverageMeter, accuracy, full_detach
 from loss import LossComputer
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
+
+device = torch.device("cuda")
 import pandas as pd
 import os
 
-os.putenv("CUDA_VISIBLE_DEVICES", "1")
-device = torch.device("cuda")
 
 def run_epoch(
     epoch,
@@ -132,7 +132,7 @@ def run_epoch(
             for class_ind in range(probs.shape[1]):
                 output_df[f"pred_prob_{run_name}_{class_ind}"] = probs[:, class_ind]
 
-            loss_main = loss_computer.loss(outputs, y, l, is_training)
+            loss_main = loss_computer.loss(outputs, y, g, is_training)
 
             if is_training:
                 if (args.model.startswith("bert") and args.use_bert_params): 
