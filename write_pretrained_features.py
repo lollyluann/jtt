@@ -75,7 +75,7 @@ def get_data(which="train"):
 
     with torch.set_grad_enabled(False):
 
-        for i, (x_batch, y, g) in enumerate(tqdm(loader)):
+        for i, (x_batch, y, g, l, j) in enumerate(tqdm(loader)):
             x_batch = x_batch.cuda()
 
             num_in_batch = list(x_batch.shape)[0]
