@@ -48,12 +48,13 @@ if compute_dists:
     distance_matrix = pdist(grads, metric=dist_metric)
     avg_distance = distance_matrix.mean()
     print("Avg pairwise " + dist_metric + " distance:", avg_distance)
-    _ = plt.hist(distance_matrix, bins='auto')
+    fig = plt.figure()
+    plt.hist(distance_matrix, bins='auto')
     plt.title("Histogram of pairwise " +dist_metric+" distances, "+which_data)
     plt.savefig("histogram_dists_"+dist_metric+"_"+which_data+".pdf")
-    plt.close()
 
-    _ = plt.plot(list(range(distance_matrix.size)), np.sort(distance_matrix, axis=0))
+    fig = plt.figure()
+    plt.plot(list(range(distance_matrix.size)), np.sort(distance_matrix, axis=0))
     plt.title("k-distance plot of pairwise " + dist_metric + "_" + which_data + ".pdf")
     plt.savefig("kdistance_"+dist_metric+"_"+which_data+".pdf")
 
@@ -149,6 +150,14 @@ if do_dbscan:
                 plt.savefig("cluster_" + which_data + "_ep_" + str(ep)[:5] + "_ms_" + str(ms) + ".pdf")
 
 if do_kmeans:
+    # plot ground truth 
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=train_l, cmap="Spectral")
+    ax.text2D(0.05, 0.95, "ground truth groups "+which_data, transform=ax.transAxes)
+    legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Groups")
+    plt.savefig("groundtruth_groups_" + which_data + ".pdf")
+    
     if spherekmeans:
         norm_data = preprocessing.normalize(grads) #plotdata[:,:num_pcs])
         km = spherical_kmeans(norm_data, k=4, s_iters=5)
@@ -181,7 +190,7 @@ if do_kmeans:
     scattered = ax.scatter(plotdata[:,0], plotdata[:,1], plotdata[:,2], c=km, cmap="Spectral")
     ax.text2D(0.05, 0.95, "kmeans clusters, "+which_data+", "+str(num_pcs)+" PCs", transform=ax.transAxes)
     legend = ax.legend(*scattered.legend_elements(), loc="upper right", title="Clusters")
-    plt.savefig("cluster_kmeans_sphere_" + which_data + ".pdf")
+    plt.savefig("cluster_kmeans_" + which_data + ".pdf")
 
 if do_agg:
     agg = cluster.AgglomerativeClustering(n_clusters=None, distance_threshold=175)
