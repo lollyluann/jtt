@@ -22,7 +22,7 @@ pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"cosine" #"euclidean"
 overwrite = True
-which_data = "test"
+which_data = "val"
 
 data_dir = "../weight_bias_fc_grads_"+which_data+".npy"
 grads = np.load(data_dir)
