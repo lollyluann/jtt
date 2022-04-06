@@ -16,8 +16,8 @@ from spherical_kmeans import spherical_kmeans
 do_dbscan = False
 compute_dists = do_dbscan or True 
 do_agg = False
-do_kmeans = False
-spherekmeans = True and do_kmeans
+do_kmeans = True
+spherekmeans = False and do_kmeans
 pca_setting = "scree" # "bias_separate" OR "scree" OR "3D"
 dim_red = "PCA"
 dist_metric = "cosine" #"cosine" #"euclidean"
@@ -26,7 +26,7 @@ which_data = "test"
 
 data_dir = "../weight_bias_fc_grads_"+which_data+".npy"
 grads = np.load(data_dir)
-train_l = np.load("../" + which_data +"_data_l_resnet50.npy")
+train_l = np.load("../" + which_data +"_data_l_resnet_fc.npy")
 print("Loaded gradients of shape", grads.shape)
 print(grads.shape[0], "data points,", grads.shape[1], "gradients")
 

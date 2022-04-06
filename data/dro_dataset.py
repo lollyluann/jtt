@@ -89,6 +89,5 @@ def get_loader(dataset, train, reweight_groups, **kwargs):
                                         replacement=True)
         shuffle = False
 
-    # assert shuffle == False
     loader = DataLoader(dataset, shuffle=shuffle, sampler=sampler, **kwargs)
     return loader

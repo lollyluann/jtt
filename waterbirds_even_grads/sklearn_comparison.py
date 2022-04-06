@@ -5,23 +5,32 @@ import numpy as np
 model = "pretrained-18"
 remove_out = False
 
+#train_x = np.load("../resnet-18_1layertrain.npy")
+#train_y = np.load("../data_train_y.npy")
+#train_g = np.load("../data_train_g.npy")
+
 train_x = np.load("../train_data_resnet_" + model + ".npy")
-train_x = np.load("../resnet-18_1layertrain.npy")
 train_y = np.load("../train_data_y_resnet_" + model + ".npy")
 train_g = np.load("../train_data_g_resnet_" + model + ".npy")
-train_l = np.load("../train_data_l_resnet_" + model + ".npy")
+#train_l = np.load("../train_data_l_resnet_" + model + ".npy")
+
+#val_x = np.load("../resnet-18_1layerval.npy")
+#val_y = np.load("../data_val_y.npy")
+#val_g = np.load("../data_val_g.npy")
 
 val_x = np.load("../val_data_resnet_" + model + ".npy")
-val_x = np.load("../resnet-18_1layerval.npy")
 val_y = np.load("../val_data_y_resnet_" + model + ".npy")
 val_g = np.load("../val_data_g_resnet_" + model + ".npy")
-val_l = np.load("../val_data_l_resnet_" + model + ".npy")
+#val_l = np.load("../val_data_l_resnet_" + model + ".npy")
+
+#test_x = np.load("../resnet-18_1layertest.npy")
+#test_y = np.load("../data_test_y.npy")
+#test_g = np.load("../data_test_g.npy")
 
 test_x = np.load("../test_data_resnet_" + model + ".npy")
-test_x = np.load("../resnet-18_1layertest.npy")
 test_y = np.load("../test_data_y_resnet_" + model + ".npy")
 test_g = np.load("../test_data_g_resnet_" + model + ".npy")
-test_l = np.load("../test_data_l_resnet_" + model + ".npy")
+#test_l = np.load("../test_data_l_resnet_" + model + ".npy")
 
 print("train data shape", train_x.shape)
 

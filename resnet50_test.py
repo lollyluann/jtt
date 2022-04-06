@@ -11,6 +11,8 @@ from data.confounder_utils import prepare_confounder_data
 from data import dro_dataset
 from tqdm import tqdm
 
+from extractable_resnet import resnet18
+
 def full_detach(x):
     return x.squeeze().detach().cpu().numpy()
 
@@ -20,21 +22,23 @@ device = torch.device("cuda")
 pretrained = True
 n_classes = 2
 
-model_name = "pretrained-18"
+model_name = "fc"
 
 if model_name == "pretrained-50":
     model = torchvision.models.resnet50(pretrained=pretrained)
+    model = torch.nn.Sequential(*list(model.children())[:-1])
 elif model_name == "pretrained-18":
     model = torchvision.models.resnet18(pretrained=pretrained)
+    model = torch.nn.Sequential(*list(model.children())[:-1])
+    model = resnet18(pretrained=True, layers_to_extract=1)
 elif model_name == "fc":
     model_dir = "results/CUB/CUB_resnet_fc_grads/ERM_upweight_0_epochs_300_lr_1e-05_weight_decay_1.0/model_outputs/"
     model = torch.load(model_dir + "160_model.pth")
-    model.eval()
 elif model_name == "fcfc":
     model_dir = "results/CUB/CUB_resnet_fc_fc_nodrop_grads/ERM_upweight_0_epochs_300_lr_1e-05_weight_decay_1.0/model_outputs/"
     model = torch.load(model_dir + "160_model.pth")
-    model.eval()
 
+model.eval()
 model = model.to(device)
 
 loss_fn = nn.CrossEntropyLoss(reduction="none")
@@ -89,19 +93,25 @@ def get_data(which="train", get_grads=False):
 
     if which=="train":
         loader = train_loader
+        dataset = train_data
     elif which=="val":
         loader = val_loader
-    else: loader = test_loader
-    
+        dataset = val_data
+    else:
+        loader = test_loader
+        dataset = test_data
+
     all_embed = []
     all_y = []
     all_g = []
     all_l = []
     gs = []
+
+    n = len(dataset)
+    start_pos = 0
     
     for idx, batch in enumerate(tqdm(loader)):
         batch = tuple(t.to(device) for t in batch)
-        print("batch size", batch[0].shape[0])
         x = batch[0]
         y = batch[1]
         g = batch[2]
@@ -112,15 +122,12 @@ def get_data(which="train", get_grads=False):
 
         if idx == 0:
             all_embed = full_detach(outputs)
-            all_y = full_detach(y)
-            all_g = full_detach(g)
-            all_l = full_detach(l)
         else:
             all_embed = np.concatenate([all_embed, full_detach(outputs)], axis=0)
-            all_y = np.concatenate([all_y, full_detach(y)])
-            all_g = np.concatenate([all_g, full_detach(g)])
-            all_l = np.concatenate([all_l, full_detach(l)])
-        
+        all_y.extend(full_detach(y))
+        all_g.extend(full_detach(g))
+        all_l.extend(full_detach(l))
+
         if get_grads:
             with torch.set_grad_enabled(True):
                 for i, pt in enumerate(x):
@@ -161,7 +168,8 @@ def get_data(which="train", get_grads=False):
         gs = np.stack(gs, axis=0)
         print("Gradients have shape", gs.shape)
         np.save("weight_bias_"+model_name+"_grads_" + which + ".npy", gs)
-        
+       
+    all_embed, all_y, all_g = np.array(all_embed), np.array(all_y), np.array(all_g)
     print(all_embed.shape)
     print(all_y.shape)
     print(all_g.shape)
@@ -170,8 +178,7 @@ def get_data(which="train", get_grads=False):
     np.save(which+"_data_g_resnet_" + model_name + ".npy", all_g)
     np.save(which+"_data_l_resnet_" + model_name + ".npy", all_l)
 
-
-should_grads = False
+should_grads = True
 get_data("train", get_grads=should_grads)
 get_data("val", get_grads=should_grads)
 get_data("test", get_grads=should_grads)

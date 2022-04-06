@@ -7,6 +7,10 @@ grads = np.load(data_dir + "/last_fc_grads_epoch_50.npy")
 print(grads.shape)
 print(grads)
 '''
+ddir = "train_data_l_resnet_fc.npy"
+print(np.unique(np.load(ddir)))
+print(np.load(ddir))
+
 
 data_dir = "cub/data/waterbird_complete95_forest2water2"
 out_dir = "cub/data/waterbird_outliers"
