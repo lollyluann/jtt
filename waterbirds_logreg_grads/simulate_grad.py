@@ -58,6 +58,7 @@ def evaluate(model, data, labels, groups, verbose=False):
     group_accs = [0,0,0,0,0]
     for ig in [0, 1, 2, 3, 4]:
         indices = [i for i in range(len(labels)) if (groups[i]==ig)]
+        if not indices: continue
         group_accs[ig] = accuracy_score(labels[indices], predictions[indices])
         if verbose:
             print("Group", ig, ":", len(indices), "samples")
@@ -120,8 +121,10 @@ for epoch in tqdm(range(epochs)):
             val_acc, group_accs = evaluate(model, val_x, val_y, val_l)
             accs.append(val_acc)
             g_accs.append(group_accs)
-    
-plt.plot(losses)
+
+yticks = list(range(0, epochs, 5))
+plt.plot(yticks, losses)
+plt.axvline(x=np.argmin(losses))
 plt.ylabel("Loss")
 plt.title("Loss over time")
 plt.savefig("val_loss.pdf")
@@ -129,14 +132,15 @@ plt.close()
 print("Epoch with best val loss:", np.argmin(losses), min(losses))
 
 g_accs = np.array(g_accs)
-plt.plot(accs, label="Average accuracy")
-plt.plot(g_accs[:, 0], label="Group 0 accuracy")
-plt.plot(g_accs[:, 1], label="Group 1 accuracy")
-plt.plot(g_accs[:, 2], label="Group 2 accuracy")
-plt.plot(g_accs[:, 3], label="Group 3 accuracy")
-plt.plot(g_accs[:, 4], label="Outliers accuracy")
+plt.plot(yticks, accs, label="Average accuracy")
+plt.plot(yticks, g_accs[:, 0], label="Group 0 accuracy")
+plt.plot(yticks, g_accs[:, 1], label="Group 1 accuracy")
+plt.plot(yticks, g_accs[:, 2], label="Group 2 accuracy")
+plt.plot(yticks, g_accs[:, 3], label="Group 3 accuracy")
+plt.plot(yticks, g_accs[:, 4], label="Outliers accuracy")
+plt.axvline(x=np.argmax(accs))
 plt.title("Accuracies over time")
-plt.legend()
+plt.legend(prop={'size':6})
 plt.savefig("val_accuracies.pdf")
 plt.close()
 print("Epoch with best val acc:", np.argmax(accs), max(accs))
