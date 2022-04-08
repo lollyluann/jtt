@@ -27,7 +27,11 @@ train_x = torch.tensor(np.load("../extracted/train_data_resnet_"+modelname+".npy
 train_y = torch.tensor(np.load("../extracted/train_data_y_resnet_"+modelname+".npy"), device=device).float()
 train_l = np.load("../extracted/train_data_l_resnet_"+modelname+".npy")
 train_data = torch.utils.data.TensorDataset(train_x, train_y)
-train_loader = torch.utils.data.DataLoader(train_data, sampler=BalancedBatchSampler(train_data, train_y), batch_size=300)
+train_loader = torch.utils.data.DataLoader(train_data, sampler=BalancedBatchSampler(train_data, train_y), batch_size=64)
+
+val_x = torch.tensor(np.load("../extracted/val_data_resnet_"+modelname+".npy"), device=device).float()
+val_y = torch.tensor(np.load("../extracted/val_data_y_resnet_"+modelname+".npy"), device=device).float()
+val_l = np.load("../extracted/val_data_l_resnet_"+modelname+".npy")
 
 '''
 a = train_x.shape[1]
@@ -39,6 +43,29 @@ def model(xb):
     sig = torch.nn.Sigmoid().to(device)
     return sig(xb @ weights + bias)
 '''
+def predict(model, data):
+    model.eval()
+    if not isinstance(data, torch.Tensor):
+        data = torch.tensor(data)
+    return full_detach(model(data).round())
+
+def evaluate(model, data, labels, groups, verbose=False):
+    if isinstance(labels, torch.Tensor):
+        labels = full_detach(labels)
+    predictions = predict(model, data)
+    acc = accuracy_score(labels, predictions)
+
+    group_accs = [0,0,0,0,0]
+    for ig in [0, 1, 2, 3, 4]:
+        indices = [i for i in range(len(labels)) if (groups[i]==ig)]
+        group_accs[ig] = accuracy_score(labels[indices], predictions[indices])
+        if verbose:
+            print("Group", ig, ":", len(indices), "samples")
+            print(group_accs[ig])
+    if verbose:
+        print("Overall accuracy", acc)
+        print(confusion_matrix(labels, predictions))
+    return acc, group_accs
 
 def export_grads(x, y, model, optimizer, data_name, loss_func=torch.nn.BCELoss()):
     weight_traingrad, bias_traingrad = [], []
@@ -70,6 +97,8 @@ weight_traingrad, input_traingrad, bias_traingrad = [], [], []
 weight_testgrad, input_testgrad, bias_testgrad = [], [], []
 
 losses = []
+accs = []
+g_accs = []
 
 model.train()
 model.to(device)
@@ -79,33 +108,38 @@ for epoch in tqdm(range(epochs)):
         optimizer.zero_grad()
         pred = model(batch_x).squeeze()
         loss = loss_func(pred, batch_y)
-        losses.append(loss.item())
         loss.backward()
         optimizer.step()
+
+    if epoch%5==0:
+        with torch.no_grad():
+            val_outputs = model(val_x).squeeze()
+            val_loss = loss_func(val_outputs, val_y)
+            losses.append(val_loss.item())
+
+            val_acc, group_accs = evaluate(model, val_x, val_y, val_l)
+            accs.append(val_acc)
+            g_accs.append(group_accs)
     
 plt.plot(losses)
 plt.ylabel("Loss")
 plt.title("Loss over time")
-plt.savefig("train_loss.pdf")
+plt.savefig("val_loss.pdf")
+plt.close()
+print("Epoch with best val loss:", np.argmin(losses), min(losses))
 
-def predict(model, data):
-    model.eval()
-    if not isinstance(data, torch.Tensor):
-        data = torch.tensor(data)
-    return full_detach(model(data).round())
-
-def evaluate(model, data, labels, groups):
-    if isinstance(labels, torch.Tensor):
-        labels = full_detach(labels)
-    predictions = predict(model, data)
-    acc = accuracy_score(labels, predictions)
-
-    for ig in [0, 1, 2, 3, 4]:
-        indices = [i for i in range(len(labels)) if (groups[i]==ig)]
-        print("Group", ig, ":", len(indices), "samples")
-        print(accuracy_score(labels[indices], predictions[indices]))
-    print("Overall accuracy", acc)
-    print(confusion_matrix(labels, predictions))
+g_accs = np.array(g_accs)
+plt.plot(accs, label="Average accuracy")
+plt.plot(g_accs[:, 0], label="Group 0 accuracy")
+plt.plot(g_accs[:, 1], label="Group 1 accuracy")
+plt.plot(g_accs[:, 2], label="Group 2 accuracy")
+plt.plot(g_accs[:, 3], label="Group 3 accuracy")
+plt.plot(g_accs[:, 4], label="Outliers accuracy")
+plt.title("Accuracies over time")
+plt.legend()
+plt.savefig("val_accuracies.pdf")
+plt.close()
+print("Epoch with best val acc:", np.argmax(accs), max(accs))
 
 ## Base classifier
 #base_predict = predict(model, train_x)
@@ -124,7 +158,7 @@ _ = group_metrics(test_y, base_predict_ideal, test_a, label_protected=1, label_g
 #plot_decision(test_x, test_a, test_y, lambda x: base_lr_ideal.predict_proba(x)[:,1], title='Log Reg IDEAL')
 
 print("Training data accuracies")
-evaluate(model, train_x, train_y, train_l)
+evaluate(model, train_x, train_y, train_l, verbose=True)
 
 #weight_traingrad = np.array(weight_traingrad)
 #bias_traingrad = np.array(bias_traingrad)
@@ -143,15 +177,11 @@ test_x = torch.tensor(np.load("../extracted/test_data_resnet_"+modelname+".npy")
 test_y = torch.tensor(np.load("../extracted/test_data_y_resnet_"+modelname+".npy"), device=device).float()
 test_l = np.load("../extracted/test_data_l_resnet_"+modelname+".npy")
 
-print("Test data accuracies")
-evaluate(model, test_x, test_y, test_l)
-
-val_x = torch.tensor(np.load("../extracted/val_data_resnet_"+modelname+".npy"), device=device).float()
-val_y = torch.tensor(np.load("../extracted/val_data_y_resnet_"+modelname+".npy"), device=device).float()
-val_l = np.load("../extracted/val_data_l_resnet_"+modelname+".npy")
-
 print("Validation data accuracies")
-evaluate(model, val_x, val_y, val_l)
+evaluate(model, val_x, val_y, val_l, verbose=True)
+
+print("Test data accuracies")
+evaluate(model, test_x, test_y, test_l, verbose=True)
 
 export_grads(train_x, train_y, model, optimizer, "train")
 export_grads(val_x, val_y, model, optimizer, "val")
